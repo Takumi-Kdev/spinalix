@@ -13,6 +13,16 @@
 
 ---
 
+## スクリーンショット
+
+| ホーム（想起） | 記憶回路 | 思考結晶 |
+|---|---|---|
+| ![home](submission/gallery/01-home-recall.png) | ![circuit](submission/gallery/02-circuit.png) | ![crystal](submission/gallery/03-thought-crystal.png) |
+
+| 矛盾の指摘 | Mac常駐とスマホ接続 | 断片とつながり |
+|---|---|---|
+| ![tension](submission/gallery/04-crystal-tension.png) | ![qr](submission/gallery/05-connection-qr.png) | ![fragment](submission/gallery/06-fragment-links.png) |
+
 ## これは何か
 
 既存の「AIメモリー」は**保存と検索**です。Spinalixは一回り違います — **記憶をするAI**です。
