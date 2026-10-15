@@ -1,14 +1,47 @@
-// Spinalix ストア — 状態・永続化・同期（localStorage / Mac常駐サーバー）
+// Spinalix ストア — 状態・永続化・同期・自立思考・APIモード
 import { create } from 'zustand'
 import type { EmotionVector, Fragment, Link, Preferences, SuddenThought, ThoughtCrystal } from './lib/types'
 import { PERSONA_FRAGMENTS, USER_FRAGMENTS, type SeedFragment } from './lib/persona'
 import { analyzeEmotion, blendEmotion } from './lib/emotion'
-import { adoptThought, assembleCrystal, buildLinks, generateSuddenThought } from './lib/engine'
+import { adoptThought, assembleCrystal, buildLinks } from './lib/engine'
+import { think, toThought } from './lib/think'
+import { stylizeWithApi, type ApiConfig } from './lib/apiBrain'
 
-const STORAGE_KEY = 'spinalix-v1'
-const TS_KEY = 'spinalix-v1-ts'
+const STORAGE_KEY = 'spinalix-v2'
+const TS_KEY = 'spinalix-v2-ts'
+const API_KEY = 'spinalix-api-v1'
+const LEGACY_KEY = 'spinalix-v1'
 
 export type SyncMode = 'local' | 'brain'
+
+export interface ApiSettings extends ApiConfig {
+  enabled: boolean
+}
+
+const DEFAULT_API: ApiSettings = { enabled: false, provider: 'gemini', model: 'gemini-2.0-flash', apiKey: '' }
+
+/** v1のデータをv2の形へ移行する（フィールド欠落を埋める） */
+function normalizeThought(t: SuddenThought): SuddenThought {
+  return {
+    ...t,
+    path: t.path ?? t.from ?? [],
+    steps: t.steps ?? [],
+    engine: t.engine ?? 'local',
+    score: t.score ?? 0,
+    fingerprint: t.fingerprint ?? (t.from?.length ? [...t.from].sort().join('|') : `legacy|${t.id}`),
+  }
+}
+
+export function normalizePrefs(p: Partial<Preferences> | undefined | null): Preferences {
+  const keys = ['echo', 'tension', 'question', 'recall', 'arc', 'leap', 'openloop'] as const
+  const adoptedKinds = {} as Record<(typeof keys)[number], number>
+  const rejectedKinds = {} as Record<(typeof keys)[number], number>
+  for (const k of keys) {
+    adoptedKinds[k] = p?.adoptedKinds?.[k] ?? 0
+    rejectedKinds[k] = p?.rejectedKinds?.[k] ?? 0
+  }
+  return { adoptedKinds, rejectedKinds, adoptedThoughtTexts: p?.adoptedThoughtTexts ?? [] }
+}
 
 interface Persisted {
   fragments: Fragment[]
@@ -19,11 +52,7 @@ interface Persisted {
 
 function seedToFragment(seed: SeedFragment, idx: number): Fragment {
   const emotion: EmotionVector = seed.em
-    ? {
-        valence: seed.em.v,
-        arousal: seed.em.a,
-        intensities: seed.em.i ?? analyzeEmotion(seed.t).intensities,
-      }
+    ? { valence: seed.em.v, arousal: seed.em.a, intensities: seed.em.i ?? analyzeEmotion(seed.t).intensities }
     : analyzeEmotion(seed.t)
   return {
     id: `f${String(idx).padStart(3, '0')}`,
@@ -37,14 +66,9 @@ function seedToFragment(seed: SeedFragment, idx: number): Fragment {
 }
 
 export function seedFragments(): Fragment[] {
-  const all = [...PERSONA_FRAGMENTS, ...USER_FRAGMENTS]
-  return all.map(seedToFragment).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-}
-
-const EMPTY_PREFS: Preferences = {
-  adoptedKinds: { echo: 0, tension: 0, question: 0, recall: 0 },
-  rejectedKinds: { echo: 0, tension: 0, question: 0, recall: 0 },
-  adoptedThoughtTexts: [],
+  return [...PERSONA_FRAGMENTS, ...USER_FRAGMENTS]
+    .map(seedToFragment)
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
 }
 
 interface SpinalixState extends Persisted {
@@ -52,14 +76,22 @@ interface SpinalixState extends Persisted {
   hydrated: boolean
   syncMode: SyncMode
   lan: string | null
+  autonomous: boolean
+  thinking: boolean
+  api: ApiSettings
   hydrate: () => Promise<void>
   addFragment: (text: string, manual?: EmotionVector) => Fragment
   advanceThought: () => SuddenThought | null
+  runCycle: () => Promise<SuddenThought | null>
+  deepThink: (n: number) => Promise<void>
   decide: (thoughtId: string, accept: boolean) => void
   buildCrystal: (intention: string) => ThoughtCrystal
   resetAll: () => void
   exportJSON: () => string
   pullFromServer: () => Promise<void>
+  setAutonomous: (on: boolean) => void
+  setApi: (patch: Partial<ApiSettings>) => void
+  importVault: (files: File[]) => Promise<number>
 }
 
 export const useSpinalix = create<SpinalixState>((set, get) => {
@@ -75,21 +107,42 @@ export const useSpinalix = create<SpinalixState>((set, get) => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
       localStorage.setItem(TS_KEY, String(now))
     } catch {
-      // 容量制限などで保存できなくても動作は継続
+      // 保存できない環境でも動作は継続
     }
     if (get().syncMode === 'brain') {
       fetch('/api/state', {
         method: 'PUT',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ updatedAt: now, payload: data }),
-      }).catch(() => {
-        // サーバーが落ちていても手元の記憶は失われない
-      })
+      }).catch(() => {})
     }
   }
 
   const apply = (data: Persisted) => {
-    set({ ...data, links: buildLinks(data.fragments) })
+    const thoughts = (data.thoughts ?? []).map(normalizeThought)
+    const prefs = normalizePrefs(data.prefs)
+    set({ fragments: data.fragments, thoughts, crystals: data.crystals ?? [], prefs, links: buildLinks(data.fragments) })
+  }
+
+  /** 決定論的エンジンで下書きを作り、必要ならAPIで「文体化」する（検証つき） */
+  const generateNext = async (): Promise<SuddenThought | null> => {
+    const { fragments, links, thoughts, prefs, api } = get()
+    const draft = think(fragments, links, thoughts, prefs, { now: new Date(), cycleIndex: thoughts.length })
+    if (!draft) return null
+    let engine: SuddenThought['engine'] = 'local'
+    if (api.enabled && api.apiKey.trim()) {
+      const outcome = await stylizeWithApi(draft, fragments, { provider: api.provider, model: api.model, apiKey: api.apiKey })
+      if (outcome.ok && outcome.text) {
+        draft.text = outcome.text
+        engine = 'ai'
+      }
+    }
+    const thought = toThought(draft, new Date())
+    thought.engine = engine
+    const next = [...get().thoughts, thought]
+    set({ thoughts: next })
+    commit()
+    return thought
   }
 
   return {
@@ -97,26 +150,35 @@ export const useSpinalix = create<SpinalixState>((set, get) => {
     links: [],
     thoughts: [],
     crystals: [],
-    prefs: EMPTY_PREFS,
+    prefs: normalizePrefs(null),
     hydrated: false,
     syncMode: 'local',
     lan: null,
+    autonomous: false,
+    thinking: false,
+    api: DEFAULT_API,
 
     hydrate: async () => {
       if (get().hydrated) return
 
-      // 1) 手元のデータを読み込む
+      // API設定（端末にだけ保存・同期しない）
+      try {
+        const rawApi = localStorage.getItem(API_KEY)
+        if (rawApi) set({ api: { ...DEFAULT_API, ...(JSON.parse(rawApi) as Partial<ApiSettings>) } })
+      } catch {
+        // ignore
+      }
+
       let local: Persisted | null = null
       let localTs = 0
       try {
-        const raw = localStorage.getItem(STORAGE_KEY)
+        const raw = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_KEY)
         if (raw) local = JSON.parse(raw) as Persisted
         localTs = Number(localStorage.getItem(TS_KEY) ?? 0)
       } catch {
         local = null
       }
 
-      // 2) Mac常駐の脳がいるか確かめる（静的デプロイでは黙ってローカル動作）
       try {
         const info = await fetch('/api/info', { signal: AbortSignal.timeout(1200) })
         if (info.ok) {
@@ -140,10 +202,9 @@ export const useSpinalix = create<SpinalixState>((set, get) => {
         set({ syncMode: 'local' })
       }
 
-      // 3) 手元のデータ（なければ8ヶ月分の記憶）で開始
       const data: Persisted = local?.fragments?.length
         ? local
-        : { fragments: seedFragments(), thoughts: [], crystals: [], prefs: EMPTY_PREFS }
+        : { fragments: seedFragments(), thoughts: [], crystals: [], prefs: normalizePrefs(null) }
       apply(data)
       set({ hydrated: true })
       if (get().syncMode === 'brain') commit()
@@ -162,9 +223,7 @@ export const useSpinalix = create<SpinalixState>((set, get) => {
         people: tags.people,
         themes: tags.themes,
       }
-      const fragments = [...get().fragments, f].sort(
-        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-      )
+      const fragments = [...get().fragments, f].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
       set({ fragments, links: buildLinks(fragments) })
       commit()
       return f
@@ -175,11 +234,31 @@ export const useSpinalix = create<SpinalixState>((set, get) => {
       for (let i = thoughts.length - 1; i >= 0; i--) {
         if (thoughts[i].status === 'new') return thoughts[i]
       }
-      const t = generateSuddenThought(fragments, links, thoughts, prefs, new Date())
-      if (!t) return null
-      set({ thoughts: [...thoughts, t] })
+      const draft = think(fragments, links, thoughts, prefs, { now: new Date(), cycleIndex: thoughts.length })
+      if (!draft) return null
+      const thought = toThought(draft, new Date())
+      const next = [...thoughts, thought]
+      set({ thoughts: next })
       commit()
-      return t
+      return thought
+    },
+
+    runCycle: async () => {
+      if (get().thinking) return null
+      set({ thinking: true })
+      try {
+        const t = await generateNext()
+        return t
+      } finally {
+        set({ thinking: false })
+      }
+    },
+
+    deepThink: async (n: number) => {
+      for (let i = 0; i < n; i++) {
+        const t = await get().runCycle()
+        if (!t) break
+      }
     },
 
     decide: (thoughtId: string, accept: boolean) => {
@@ -218,11 +297,12 @@ export const useSpinalix = create<SpinalixState>((set, get) => {
       try {
         localStorage.removeItem(STORAGE_KEY)
         localStorage.removeItem(TS_KEY)
+        localStorage.removeItem(LEGACY_KEY)
       } catch {
         // ignore
       }
       const fragments = seedFragments()
-      set({ fragments, links: buildLinks(fragments), thoughts: [], crystals: [], prefs: EMPTY_PREFS })
+      set({ fragments, links: buildLinks(fragments), thoughts: [], crystals: [], prefs: normalizePrefs(null) })
       commit()
     },
 
@@ -246,14 +326,95 @@ export const useSpinalix = create<SpinalixState>((set, get) => {
         // 通信できないだけ。何もしない
       }
     },
+
+    setAutonomous: (on: boolean) => set({ autonomous: on }),
+
+    setApi: (patch: Partial<ApiSettings>) => {
+      const next = { ...get().api, ...patch }
+      set({ api: next })
+      try {
+        localStorage.setItem(API_KEY, JSON.stringify(next))
+      } catch {
+        // ignore
+      }
+    },
+
+    importVault: async (files: File[]) => {
+      const { fragments } = get()
+      const imported: Fragment[] = []
+      const seen = new Set(fragments.map((f) => f.text))
+      const md = files.filter((f) => /\.(md|markdown|txt)$/i.test(f.name)).slice(0, 300)
+      for (const file of md) {
+        try {
+          const raw = await file.text()
+          const text = extractVaultText(raw)
+          if (!text || text.length < 8 || seen.has(text)) continue
+          const when = extractVaultDate(raw, file) ?? null
+          const tags = extractVaultTags(raw)
+          const emotion = analyzeEmotion(text)
+          imported.push({
+            id: `v-${Date.now().toString(36)}-${imported.length}`,
+            text,
+            createdAt: (when ?? new Date(Date.now() - imported.length * 3600_000)).toISOString(),
+            source: 'user',
+            emotion,
+            people: PERSON_HINTS.filter((p) => text.includes(p)),
+            themes: [...new Set([...tags, ...THEME_HINTS.filter((t) => text.includes(t))])].slice(0, 5),
+          })
+        } catch {
+          // 読めないファイルは飛ばす
+        }
+      }
+      if (imported.length === 0) return 0
+      const next = [...fragments, ...imported].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      set({ fragments: next, links: buildLinks(next) })
+      commit()
+      return imported.length
+    },
   }
 })
 
-const THEME_HINTS = ['留学', '家族', '友達', '仕事', '勉強', '健康', 'お金', '将来', '自分', '恋', '写真', '部活', '社会']
+const THEME_HINTS = ['留学', '家族', '友達', '仕事', '勉強', '健康', 'お金', '将来', '自分', '恋', '写真', '部活', '社会', '夢', '挑戦']
 const PERSON_HINTS = ['母', '父', 'ミナ', '悠斗', 'ユイ', '先生', '店長', '同期', '弟']
 
 function extractTags(text: string): { themes: string[]; people: string[] } {
-  const themes = THEME_HINTS.filter((t) => text.includes(t))
-  const people = PERSON_HINTS.filter((p) => text.includes(p))
-  return { themes, people }
+  return {
+    themes: THEME_HINTS.filter((t) => text.includes(t)),
+    people: PERSON_HINTS.filter((p) => text.includes(p)),
+  }
+}
+
+/** ObsidianのMarkdownから、断片として使える一文を取り出す */
+function extractVaultText(raw: string): string {
+  const withoutFrontmatter = raw.replace(/^---[\s\S]*?---\s*/m, '')
+  const lines = withoutFrontmatter
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0 && !l.startsWith('#') && !l.startsWith('```') && !l.startsWith('[[') && !/^[-*]\s*$/.test(l))
+  const body = lines.join(' ').replace(/\[\[([^\]|]+)(\|[^\]]+)?\]\]/g, '$1').replace(/[#*_>`]/g, '')
+  return body.slice(0, 140)
+}
+
+function extractVaultDate(raw: string, file: File): Date | null {
+  const fm = raw.match(/^---([\s\S]*?)---/)
+  if (fm) {
+    const m = fm[1].match(/(?:date|created|created_at)\s*:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})/)
+    if (m) return new Date(`${m[1]}T09:00:00`)
+  }
+  const fromName = file.name.match(/([0-9]{4})-([0-9]{2})-([0-9]{2})/)
+  if (fromName) return new Date(`${fromName[1]}-${fromName[2]}-${fromName[3]}T09:00:00`)
+  if (file.lastModified) return new Date(file.lastModified)
+  return null
+}
+
+function extractVaultTags(raw: string): string[] {
+  const tags = new Set<string>()
+  for (const m of raw.matchAll(/#([^\s#\]]{2,16})/g)) tags.add(m[1])
+  const fm = raw.match(/^---([\s\S]*?)---/)
+  if (fm) {
+    const list = fm[1].match(/tags\s*:\s*\[([^\]]+)\]/)
+    if (list) for (const t of list[1].split(',')) tags.add(t.trim().replace(/['"#]/g, ''))
+    for (const m of fm[1].matchAll(/^\s*-\s*([^\s#]{2,16})$/gm)) tags.add(m[1])
+  }
+  return [...tags].filter((t) => t.length > 0)
 }

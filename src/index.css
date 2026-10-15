@@ -1,14 +1,14 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-ink: #0b0e14;
-  --color-ink-2: #10141d;
-  --color-panel: #141926;
+  --color-ink: #07090f;
+  --color-ink-2: #0c1018;
+  --color-panel: #10141f;
+  --color-panel-2: #141a28;
   --color-hairline: rgba(255, 255, 255, 0.07);
   --color-bone: #ece7dc;
-  --color-bone-2: #d9d2c3;
-  --color-muted: #8d96a8;
-  --color-faint: #5b6475;
+  --color-muted: #939cad;
+  --color-faint: #5d6678;
   --color-amber: #f0b35c;
   --color-amber-soft: #ffd48f;
   --color-teal: #7fd1ae;
@@ -16,6 +16,7 @@
   --color-sky: #8fb8e8;
   --font-sans: 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', system-ui, sans-serif;
   --font-serif: 'Shippori Mincho', 'Hiragino Mincho ProN', serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
 }
 
 html,
@@ -25,10 +26,7 @@ body,
 }
 
 body {
-  background:
-    radial-gradient(1200px 700px at 75% -10%, rgba(240, 179, 92, 0.07), transparent 60%),
-    radial-gradient(900px 600px at 10% 110%, rgba(143, 184, 232, 0.06), transparent 60%),
-    var(--color-ink);
+  background: var(--color-ink);
   color: var(--color-bone);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -36,108 +34,186 @@ body {
 }
 
 ::selection {
-  background: rgba(240, 179, 92, 0.35);
+  background: rgba(240, 179, 92, 0.3);
 }
 
-/* ── 紙の記憶カード ─────────────────────────── */
-.paper {
-  background: linear-gradient(178deg, #f2ecdf 0%, #e9e2d2 100%);
-  color: #1b1e26;
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.5) inset,
-    0 10px 30px -18px rgba(0, 0, 0, 0.9);
-}
-
-/* ── 想起カード ─────────────────────────────── */
-.thought-card {
-  position: relative;
-  border-radius: 20px;
-  background:
-    linear-gradient(var(--color-ink-2), var(--color-ink-2)) padding-box,
-    linear-gradient(140deg, rgba(240, 179, 92, 0.55), rgba(240, 179, 92, 0.06) 45%, rgba(143, 184, 232, 0.25)) border-box;
-  border: 1px solid transparent;
-  box-shadow: 0 24px 60px -30px rgba(240, 179, 92, 0.28), 0 2px 0 rgba(255, 255, 255, 0.03) inset;
-}
-
-.thought-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 20px;
-  background: radial-gradient(500px 160px at 20% 0%, rgba(240, 179, 92, 0.1), transparent 70%);
-  pointer-events: none;
-}
-
-.grain::before {
+/* ── 幾何学グリッド（Obsidianのような構造の感触）────────── */
+.grid-bg::before {
   content: '';
   position: fixed;
   inset: 0;
+  z-index: 0;
   pointer-events: none;
-  opacity: 0.5;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.028) 1px, transparent 1px);
-  background-size: 3px 3px;
-  z-index: 50;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.021) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.021) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(1200px 800px at 50% 0%, black 30%, transparent 85%);
+}
+
+.vignette::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(1000px 600px at 85% -10%, rgba(240, 179, 92, 0.055), transparent 65%),
+    radial-gradient(900px 700px at 0% 110%, rgba(143, 184, 232, 0.05), transparent 60%);
+}
+
+/* ── パネル ───────────────────────────────── */
+.panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0) 40%),
+    var(--color-panel);
+  border: 1px solid var(--color-hairline);
+}
+
+.panel-flat {
+  background: var(--color-ink-2);
+  border: 1px solid var(--color-hairline);
+}
+
+.hairline-t {
+  border-top: 1px solid var(--color-hairline);
+}
+
+.hairline-b {
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+/* ── 想起カード（感情グラデーションの縁）──────────── */
+.thought-card {
+  position: relative;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0)) padding-box,
+    var(--color-panel) padding-box;
+  border: 1px solid transparent;
+  box-shadow: 0 30px 70px -40px rgba(0, 0, 0, 0.95);
+}
+
+.thought-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 19px;
+  padding: 1px;
+  background: var(--edge, linear-gradient(135deg, rgba(240, 179, 92, 0.6), rgba(240, 179, 92, 0.05) 55%, rgba(143, 184, 232, 0.3)));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ── 断片カード（紙）────────────────────────── */
+.paper {
+  background: linear-gradient(178deg, #f2ecdf 0%, #e9e2d2 100%);
+  color: #1b1e26;
+}
+
+.paper-2 {
+  background: linear-gradient(178deg, #1a1f2c 0%, #151a26 100%);
+}
+
+/* ── マイクロラベル（mono）─────────────────── */
+.mono {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+/* ── グラデーションバー（感情）──────────────── */
+.emobar {
+  border-radius: 999px;
+  background: var(--grad, linear-gradient(90deg, #f0b35c, #f27ba7));
 }
 
 /* ── アニメーション ─────────────────────────── */
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
-
 .rise {
-  animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: rise 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes fadein {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.fadein {
+  animation: fadein 0.5s ease both;
 }
 
 @keyframes pulseGlow {
   0%,
   100% {
-    opacity: 0.55;
+    opacity: 0.5;
+    transform: scale(0.96);
   }
   50% {
     opacity: 1;
+    transform: scale(1.02);
   }
 }
-
 .pulse-glow {
-  animation: pulseGlow 2.6s ease-in-out infinite;
+  animation: pulseGlow 2.4s ease-in-out infinite;
 }
 
-@keyframes shimmer {
+@keyframes orbit {
   from {
-    background-position: -200% 0;
+    transform: rotate(0deg);
   }
   to {
-    background-position: 200% 0;
+    transform: rotate(360deg);
   }
 }
-
-.shimmer {
-  background: linear-gradient(100deg, rgba(240, 179, 92, 0.12) 30%, rgba(240, 179, 92, 0.4) 50%, rgba(240, 179, 92, 0.12) 70%);
-  background-size: 200% 100%;
-  animation: shimmer 2.2s linear infinite;
+.thinking-orbit {
+  animation: orbit 1.6s linear infinite;
 }
 
-/* スクロールバー（控えめに） */
+@keyframes dash {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+.fire-dash {
+  stroke-dasharray: 6 6;
+  animation: dash 1.2s linear infinite;
+}
+
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .rise,
+  .fadein,
   .pulse-glow,
-  .shimmer {
+  .thinking-orbit,
+  .fire-dash {
     animation: none;
   }
 }
 
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+
+input[type='range'] {
+  accent-color: #f0b35c;
 }

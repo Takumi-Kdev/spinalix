@@ -40,7 +40,7 @@ export interface Link {
   reason?: string
 }
 
-export type ThoughtKind = 'echo' | 'tension' | 'question' | 'recall'
+export type ThoughtKind = 'echo' | 'tension' | 'question' | 'recall' | 'arc' | 'leap' | 'openloop'
 
 /** 「ふと」— システム主導で届く想起 */
 export interface SuddenThought {
@@ -49,6 +49,11 @@ export interface SuddenThought {
   kind: ThoughtKind
   text: string
   from: string[] // 出典断片ID（必ず1つ以上。捏造しない）
+  path: string[] // 思考歩行の道筋（起点→…→着地）
+  steps: { label: string; detail: string }[] // 思考の足跡（なぜこの想起が生まれたか）
+  engine: 'local' | 'ai' // ローカル思考 / APIによる文体化（検証済み）
+  score: number
+  fingerprint: string
   status: 'new' | 'adopted' | 'rejected'
 }
 

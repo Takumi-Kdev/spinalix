@@ -1,5 +1,9 @@
 // 日本語テキストの軽量比較（トークナイザ不要・端末内）
 
+export function pairKey(a: string, b: string): string {
+  return a < b ? `${a}|${b}` : `${b}|${a}`
+}
+
 export function normalize(s: string): string {
   return s
     .toLowerCase()

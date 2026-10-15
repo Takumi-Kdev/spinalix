@@ -18,8 +18,9 @@ import type {
   ThoughtKind,
 } from './types'
 import { blendEmotion, dominantEmotion, EMOTION_META, emotionDistance, intensityOf } from './emotion'
-import { bigrams, coverage, extractQuotes, jaccard, lastSentence, normalize, shortQuote } from './text'
+import { bigrams, coverage, extractQuotes, jaccard, lastSentence, normalize, pairKey, shortQuote } from './text'
 import { daysBetween, formatJP, monthKey, monthLabel } from './dates'
+import { think, generateSuddenThought } from './think'
 
 export interface EngineOptions {
   maxLinksPerNode?: number
@@ -27,10 +28,6 @@ export interface EngineOptions {
 }
 
 const DEFAULT_MAX_LINKS = 8
-
-export function pairKey(a: string, b: string): string {
-  return a < b ? `${a}|${b}` : `${b}|${a}`
-}
 
 function intersectCount(a: string[], b: string[]): string[] {
   const setB = new Set(b)
@@ -152,31 +149,13 @@ export function buildLinks(fragments: Fragment[], opts: EngineOptions = {}): Lin
 }
 
 // ─────────────────────────────────────────────────────────
-// 2. 想起生成 — 問いなしで、システム側から「ふと」を届ける
+// 2. 想起生成 — think.ts（思考サイクル）に移動
+//    拡散活性化 → 記憶グラフの歩行 → 言語化 → 特別な思考
 // ─────────────────────────────────────────────────────────
 
-const ECHO_TEMPLATES = [
-  (p: { quoteB: string; whenB: string; quoteA: string; whenA: string; label: string }) =>
-    `${p.whenB}の「${p.quoteB}」。${p.whenA}の「${p.quoteA}」。言葉は違うのに、${p.label}だけが、まっすぐ繋がっている。`,
-  (p: { quoteB: string; whenB: string; quoteA: string; whenA: string; label: string }) =>
-    `${p.whenA}の「${p.quoteA}」を読んで、${p.whenB}の「${p.quoteB}」を思い出した。${p.label}は、一度も消えていなかった。`,
-  (p: { quoteB: string; whenB: string; quoteA: string; whenA: string; label: string }) =>
-    `「${p.quoteB}」——${p.whenB}のこの一行は、${p.whenA}の「${p.quoteA}」の、予告編だったんじゃないか。`,
-]
-
-const TENSION_TEMPLATES = [
-  (p: { quoteB: string; whenB: string; quoteA: string; whenA: string; theme: string }) =>
-    `${p.whenB}のあなたは「${p.quoteB}」と書いた。${p.whenA}のあなたは「${p.quoteA}」と言う。${p.theme}について、どちらが本当のあなた?`,
-  (p: { quoteB: string; whenB: string; quoteA: string; whenA: string; theme: string }) =>
-    `「${p.quoteB}」（${p.whenB}）と「${p.quoteA}」（${p.whenA}）。同じ${p.theme}の話なのに、向きが正反対だ。この間に、何が変わったんだろう。`,
-]
-
-const RECALL_TEMPLATES = [
-  (p: { span: string; whenB: string; quoteA: string; whenA: string }) =>
-    `${p.whenB}、「${p.span}」と書いた。${p.whenA}のあなたは、その言葉を借りて、こう続けている——「${p.quoteA}」。あの日のあなたが、次のあなたを支えている。`,
-  (p: { span: string; whenB: string; quoteA: string; whenA: string; days: number }) =>
-    `${p.whenB}の「${p.span}」から、${p.days}日。${p.whenA}のあなたは、同じ感覚をこう言い直している——「${p.quoteA}」。`,
-]
+export function usedPairKeys(thoughts: SuddenThought[]): Set<string> {
+  return new Set(thoughts.map((t) => t.fingerprint).filter(Boolean))
+}
 
 /** 矛盾の物語性: 振れ幅が大きいほど優先（例: 5月の諦め ↔ 10月の決断） */
 function narrativeBonus(l: Link, fragments: Fragment[]): number {
@@ -185,152 +164,6 @@ function narrativeBonus(l: Link, fragments: Fragment[]): number {
   if (!a || !b) return 0
   const dv = Math.abs(a.emotion.valence - b.emotion.valence)
   return dv >= 1.2 ? 0.06 : 0
-}
-
-export function usedPairKeys(thoughts: SuddenThought[]): Set<string> {
-  const used = new Set<string>()
-  for (const t of thoughts) {
-    if (t.from.length === 2) used.add(pairKey(t.from[0], t.from[1]))
-    if (t.from.length === 1) used.add(`q:${t.from[0]}`)
-  }
-  return used
-}
-
-function thoughtCandidateScore(
-  l: Link,
-  fragments: Map<string, Fragment>,
-  kindBias: number,
-  usage: Map<string, number>,
-  lastKind: ThoughtKind | null,
-): number {
-  const a = fragments.get(l.a)
-  const b = fragments.get(l.b)
-  if (!a || !b) return -1
-  const kindBonus = l.kind === 'recall' ? 0.15 : l.kind === 'echo' ? 0.12 : 0.08
-  const timesUsed = (id: string) => usage.get(id) ?? 0
-  const stalePenalty = 0.22 * (timesUsed(l.a) + timesUsed(l.b))
-  // 種類の単調さを避ける（recallだけは連続可）
-  const monotony = lastKind === l.kind && l.kind !== 'recall' ? 0.15 : 0
-  // 矛盾は「大きな振れ幅」を優先（例: 5月の諦め ↔ 10月の決断）
-  const dv = Math.abs(a.emotion.valence - b.emotion.valence)
-  const narrative = l.kind === 'tension' && dv >= 1.2 ? 0.06 : 0
-  return l.weight + kindBonus + kindBias - stalePenalty - monotony + narrative
-}
-
-export function generateSuddenThought(
-  fragments: Fragment[],
-  links: Link[],
-  prevThoughts: SuddenThought[],
-  prefs: Preferences,
-  now: Date = new Date(),
-): SuddenThought | null {
-  const fmap = new Map(fragments.map((f) => [f.id, f]))
-  const used = usedPairKeys(prevThoughts)
-  const usage = new Map<string, number>()
-  for (const t of prevThoughts) {
-    for (const id of t.from) usage.set(id, (usage.get(id) ?? 0) + 1)
-  }
-  const lastKind = prevThoughts.length > 0 ? prevThoughts[prevThoughts.length - 1].kind : null
-
-  // 採否から学ぶ: 採用された種類の想起を少し優先する
-  const kindBias = (kind: ThoughtKind): number => {
-    const adopted = prefs.adoptedKinds[kind] ?? 0
-    const rejected = prefs.rejectedKinds[kind] ?? 0
-    return Math.max(-0.25, Math.min(0.35, (adopted - rejected) * 0.12))
-  }
-
-  type Cand = { kind: 'echo' | 'tension' | 'recall'; link: Link; score: number }
-
-  const candidates: Cand[] = []
-  for (const l of links) {
-    if ((l.kind !== 'echo' && l.kind !== 'tension' && l.kind !== 'recall') || used.has(pairKey(l.a, l.b))) continue
-    candidates.push({ kind: l.kind, link: l, score: thoughtCandidateScore(l, fmap, kindBias(l.kind), usage, lastKind) })
-  }
-
-  // 候補がない時は「問い」型: 繰り返し戻ってくるテーマから疑問を立てる
-  if (candidates.length === 0) {
-    return generateQuestionThought(fragments, prevThoughts, now)
-  }
-
-  candidates.sort((x, y) => y.score - x.score || pairKey(x.link.a, x.link.b).localeCompare(pairKey(y.link.a, y.link.b)))
-  const pick = candidates[0]
-  const [a, b] = [fmap.get(pick.link.a), fmap.get(pick.link.b)].sort(
-    (x, y) => new Date(x!.createdAt).getTime() - new Date(y!.createdAt).getTime(),
-  ) as [Fragment, Fragment]
-
-  const older = a
-  const newer = b
-  let text: string
-  if (pick.kind === 'echo') {
-    const t = ECHO_TEMPLATES[hashIndex(pairKey(a.id, b.id), ECHO_TEMPLATES.length)]
-    text = t({
-      quoteB: shortQuote(older.text),
-      whenB: formatJP(older.createdAt),
-      quoteA: shortQuote(newer.text),
-      whenA: formatJP(newer.createdAt),
-      label: pick.link.reason ?? '感情',
-    })
-  } else if (pick.kind === 'recall') {
-    const t = RECALL_TEMPLATES[hashIndex(pairKey(a.id, b.id), RECALL_TEMPLATES.length)]
-    text = t({
-      span: pick.link.reason ?? shortQuote(older.text, 20),
-      whenB: formatJP(older.createdAt),
-      quoteA: lastSentence(newer.text),
-      whenA: formatJP(newer.createdAt),
-      days: daysBetween(older.createdAt, newer.createdAt),
-    })
-  } else {
-    const t = TENSION_TEMPLATES[hashIndex(pairKey(a.id, b.id), TENSION_TEMPLATES.length)]
-    text = t({
-      quoteB: shortQuote(older.text),
-      whenB: formatJP(older.createdAt),
-      quoteA: shortQuote(newer.text),
-      whenA: formatJP(newer.createdAt),
-      theme: pick.link.reason ?? 'この問い',
-    })
-  }
-
-  return {
-    id: `st-${pairKey(a.id, b.id)}`,
-    createdAt: now.toISOString(),
-    kind: pick.kind,
-    text,
-    from: [older.id, newer.id],
-    status: 'new',
-  }
-}
-
-function generateQuestionThought(fragments: Fragment[], prevThoughts: SuddenThought[], now: Date): SuddenThought | null {
-  const asked = new Set(prevThoughts.filter((t) => t.kind === 'question').flatMap((t) => t.from))
-  const themeCount = new Map<string, Fragment[]>()
-  for (const f of fragments) {
-    for (const th of f.themes) {
-      const arr = themeCount.get(th) ?? []
-      arr.push(f)
-      themeCount.set(th, arr)
-    }
-  }
-  const ranked = [...themeCount.entries()]
-    .filter(([theme, fs]) => fs.length >= 3 && !fs.every((f) => asked.has(f.id)) && !asked.has(theme))
-    .sort((x, y) => y[1].length - x[1].length)
-  if (ranked.length === 0) return null
-  const [theme, fs] = ranked[0]
-  const sorted = [...fs].sort((x, y) => new Date(x.createdAt).getTime() - new Date(y.createdAt).getTime())
-  const first = sorted[0]
-  const last = sorted[sorted.length - 1]
-  const months = new Set(sorted.map((f) => monthKey(f.createdAt))).size
-  const text = `${theme}について、あなたの言葉は${months}ヶ月のあいだに${sorted.length}回戻ってきた。「${shortQuote(
-    first.text,
-    18,
-  )}」から「${shortQuote(last.text, 18)}」まで。まだ一度も言えていないのは、何?`
-  return {
-    id: `st-q-${theme}`,
-    createdAt: now.toISOString(),
-    kind: 'question',
-    text,
-    from: [last.id],
-    status: 'new',
-  }
 }
 
 function hashIndex(s: string, mod: number): number {
@@ -551,3 +384,5 @@ export function arcMonthsLabel(points: EmotionPoint[]): string {
 }
 
 export type { EmotionKey }
+
+export { think, generateSuddenThought, pairKey }

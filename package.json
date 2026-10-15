@@ -1,21 +1,63 @@
 {
   "name": "spinalix",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
+  "main": "electron/main.mjs",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview --host",
     "serve": "node server.mjs",
     "brain": "vite build && node server.mjs",
+    "app": "npm run build && electron .",
+    "dist": "npm run build && electron-builder --mac --arm64",
     "gallery": "node scripts/gallery.mjs",
+    "shot": "node scripts/shot.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "check": "tsc --noEmit -p tsconfig.json && vitest run && vite build"
   },
+  "build": {
+    "appId": "dev.takumi.spinalix",
+    "productName": "Spinalix",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**",
+      "server.mjs",
+      "electron/**",
+      "package.json",
+      "build/icon.icns"
+    ],
+    "mac": {
+      "identity": null,
+      "category": "public.app-category.productivity",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ]
+    },
+    "dmg": {
+      "title": "Spinalix"
+    },
+    "icon": "build/icon.icns"
+  },
   "dependencies": {
     "d3-force": "^3.0.0",
+    "d3-selection": "^3.0.0",
+    "d3-zoom": "^3.0.0",
     "qrcode-generator": "^2.0.4",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
@@ -24,13 +66,19 @@
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
     "@types/d3-force": "^3.0.10",
+    "@types/d3-selection": "^3.0.12",
+    "@types/d3-zoom": "^3.0.9",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "electron": "^44.7.2",
+    "electron-builder": "^26.15.3",
     "playwright": "^1.64.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
     "vite": "^8.3.4",
     "vitest": "^5.0.4"
-  }
+  },
+  "description": "Spinalix — 記憶が、あなたに話しかける。断片から想起を生成するローカル完結の思考脳。",
+  "author": "Takumi Kawai"
 }

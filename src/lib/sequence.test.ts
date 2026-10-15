@@ -23,8 +23,8 @@ function toFragment(seed: SeedFragment, idx: number): Fragment {
 }
 
 const PREFS: Preferences = {
-  adoptedKinds: { echo: 0, tension: 0, question: 0, recall: 0 },
-  rejectedKinds: { echo: 0, tension: 0, question: 0, recall: 0 },
+  adoptedKinds: { echo: 0, tension: 0, question: 0, recall: 0, arc: 0, leap: 0, openloop: 0 },
+  rejectedKinds: { echo: 0, tension: 0, question: 0, recall: 0, arc: 0, leap: 0, openloop: 0 },
   adoptedThoughtTexts: [],
 }
 
@@ -39,12 +39,24 @@ describe('デモの筋書き（8ヶ月の記憶から生まれる想起の順番
     expect(t.text).toContain('あれが、たぶん答えだ')
   })
 
-  it('2) 二番目の想起は「矛盾」— 5月の諦めと10月の「明日、出す。」', () => {
+  it('2) 二番目の想起は「矛盾」— 過去の恐れと、10月の「明日、出す。」が同居する', () => {
     const first = generateSuddenThought(fragments, links, [], PREFS, new Date('2026-10-15T08:00:00+09:00'))!
     const second = generateSuddenThought(fragments, links, [first], PREFS, new Date('2026-10-15T08:00:00+09:00'))!
     expect(second.kind).toBe('tension')
-    expect(second.text).toContain('諦めたほうがいい')
     expect(second.text).toContain('明日、出す')
+    expect(second.steps.length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('2b) 最初の7つの想起に、5月の「諦め」と10月の「決断」の反転が現れる', () => {
+    let thoughts: SuddenThought[] = []
+    for (let i = 0; i < 7; i++) {
+      const t = generateSuddenThought(fragments, links, thoughts, PREFS, new Date('2026-10-15T08:00:00+09:00'))
+      if (!t) break
+      thoughts = [...thoughts, t]
+    }
+    const joined = thoughts.map((t) => t.text).join('\n')
+    expect(joined).toContain('諦め')
+    expect(joined).toContain('明日、出す')
   })
 
   it('3) 想起は種類が単調にならず、同じペアを再利用しない', () => {

@@ -23,7 +23,7 @@ function toFragment(seed: SeedFragment, idx: number): Fragment {
   }
 }
 
-const EMPTY_PREFS: Preferences = { adoptedKinds: { echo: 0, tension: 0, question: 0, recall: 0 }, rejectedKinds: { echo: 0, tension: 0, question: 0, recall: 0 }, adoptedThoughtTexts: [] }
+const EMPTY_PREFS: Preferences = { adoptedKinds: { echo: 0, tension: 0, question: 0, recall: 0, arc: 0, leap: 0, openloop: 0 }, rejectedKinds: { echo: 0, tension: 0, question: 0, recall: 0, arc: 0, leap: 0, openloop: 0 }, adoptedThoughtTexts: [] }
 
 function loadPersona(): Fragment[] {
   return [...PERSONA_FRAGMENTS, ...USER_FRAGMENTS].map(toFragment)
