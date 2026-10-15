@@ -8,7 +8,7 @@ export const CURSOR_SCRIPT = () => {
     '#__sub{position:fixed;left:50%;bottom:48px;transform:translateX(-50%);max-width:1480px;',
     'background:rgba(18,16,12,.86);color:#f1e9d8;font-family:system-ui,sans-serif;font-size:27px;',
     'line-height:1.55;padding:14px 26px;border-radius:6px;border:1px solid rgba(241,233,216,.2);',
-    'opacity:0;transition:opacity .3s;text-align:center;z-index:999998}',
+    'opacity:0;transition:opacity .3s;text-align:center;z-index:999998;pointer-events:none}',
     '#__sub.on{opacity:1}',
   ].join('')
   const attach = () => {
