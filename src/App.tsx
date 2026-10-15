@@ -11,6 +11,7 @@ import { CaptureSheet } from './components/CaptureSheet'
 import { FragmentSheet } from './components/FragmentSheet'
 import { SettingsSheet } from './components/SettingsSheet'
 import { SearchSheet } from './components/SearchSheet'
+import { JudgeGuide } from './components/JudgeGuide'
 import { EMOTION_KEYS, EMOTION_META } from './lib/emotion'
 import type { EmotionKey } from './lib/types'
 
@@ -272,6 +273,12 @@ function AppShell() {
               {fragments.length} fragments / {thoughts.length} thoughts
             </p>
             <p className="mt-2 text-[10px] text-faint">n 記憶する ・ 1–6 切替 ・ / 検索</p>
+            <button
+              onClick={() => window.dispatchEvent(new Event('spinalix-guide'))}
+              className="mt-2 text-[10px] text-faint underline-offset-4 transition hover:text-bone hover:underline"
+            >
+              English guide
+            </button>
           </div>
         </aside>
 
@@ -341,6 +348,7 @@ function AppShell() {
         </div>
       </nav>
 
+      <JudgeGuide />
       <CaptureSheet open={captureOpen} onClose={() => setCaptureOpen(false)} />
       <FragmentSheet fragmentId={openFragment} onClose={() => setOpenFragment(null)} onJump={setOpenFragment} />
       <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
