@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <title>Spinalix — エンジンとテスト</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        margin: 0;
+        background: #12100c;
+        color: #e7dfcf;
+        font-family: 'Zen Kaku Gothic New', system-ui, sans-serif;
+        padding: 64px 120px 400px;
+      }
+      h1 {
+        font-family: 'Shippori Mincho', serif;
+        font-size: 34px;
+        font-weight: 600;
+        margin: 0 0 8px;
+      }
+      .lead {
+        color: #9a9182;
+        font-size: 16px;
+        margin-bottom: 44px;
+      }
+      h2 {
+        font-family: 'Shippori Mincho', serif;
+        font-size: 24px;
+        font-weight: 600;
+        border-bottom: 1px solid rgba(231, 223, 207, 0.12);
+        padding-bottom: 14px;
+        margin: 56px 0 20px;
+      }
+      pre {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 15px;
+        line-height: 1.85;
+        background: #17140f;
+        border: 1px solid rgba(231, 223, 207, 0.12);
+        border-radius: 10px;
+        padding: 22px 26px;
+        overflow: hidden;
+        white-space: pre-wrap;
+      }
+      .k { color: #c8442a; }
+      .c { color: #6a6357; }
+      .s { color: #d9a441; }
+      .term {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 15px;
+        line-height: 2;
+        background: #0c0b08;
+        border: 1px solid rgba(231, 223, 207, 0.12);
+        border-radius: 10px;
+        padding: 22px 26px;
+      }
+      .ok {
+        color: #7d9a6f;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 28px;
+        align-items: start;
+      }
+      .note {
+        color: #9a9182;
+        font-size: 14px;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>エンジンとテスト</h1>
+    <p class="lead">すべて端末内・決定論的。同じ入力からは、同じ想起が出ます。／ 17のテストが約束を守る。</p>
+
+    <h2>検証 — verify.ts（門番）</h2>
+    <div class="row">
+      <pre><span class="c">// API文体モードでも、記憶の外を語らせない</span>
+export function verifyStylized(
+  text: string,
+  citedIds: string[],
+  fragments: Fragment[],
+): StylizeVerdict {
+  <span class="c">// ① 引用は、原断片に実在しなければならない</span>
+  const quotes = extractQuotes(text)
+  for (const q of quotes) {
+    if (!haystack.includes(normalize(q)))
+      return { ok: false, reason: <span class="s">`引用が原断片に見つからない`</span> }
+  }
+  <span class="c">// ② 出典にない日付を、作ってはいけない</span>
+  <span class="c">// ③ ありきたりな励まし・助言は、破棄する</span>
+  if (GENERIC.test(text))
+    return { ok: false, reason: <span class="s">`ありきたりな励ましが入っている`</span> }
+}</pre>
+      <div>
+        <pre><span class="c">// apiBrain.ts — AIへの指示（要約）</span>
+あなたはSpinalixの「文体家」です。
+エンジンが決定論的に組み上げた〈思考状態〉を、
+自然な日本語に整えるだけの役割です。
+
+<span class="k">・あなた自身の考え・解釈・励ましを足さない</span>
+<span class="k">・与えられた断片の言葉だけを使う</span>
+<span class="k">・出力は JSON（text / cited の断片ID）</span>
+
+<span class="c">// 検証に落ちた出力は棄却され、
+// ローカルの文が使われる</span></pre>
+        <p class="note">思考はエンジン。AIは文体だけ。検証は機械的に行われる。</p>
+      </div>
+    </div>
+
+    <h2>思考歩行 — walk.ts（5つの歩き方）</h2>
+    <pre><span class="c">// 記憶グラフをビーム探索で歩く。歩き方ごとに、リンクの重み付けが変わる。</span>
+const MODE_KIND_BONUS = {
+  resonance: { recall: <span class="k">1.6</span>, echo: 1.25 },      <span class="c">// 共鳴: 過去の自分の言葉が、今に効いている道</span>
+  contrast:  { tension: <span class="k">1.7</span> },               <span class="c">// 対照: 向きが変わった二つの極（振れ幅を優先）</span>
+  dwell:     { echo: <span class="k">1.55</span> },                <span class="c">// 反すう: 同じ感情が続いている道</span>
+  arc:       { recall: 1.25, tension: 1.2 }, <span class="c">// 軌跡: 一本の道（最大3ホップ）</span>
+  leap:      { similar: 1.2, echo: 1.2 },    <span class="c">// 跳躍: 言葉は無関係で、感情だけが同じ道</span>
+}
+
+<span class="c">// 時間の往復（ジグザグ）は減点。同じ組み合わせは二度使わない。</span>
+score *= Math.pow(0.72, reversals)</pre>
+
+    <h2>実際のテスト出力</h2>
+    <div class="term">
+      <div>$ npm test</div>
+      <div>&nbsp;</div>
+      <div>✓ src/lib/engine.test.ts (11 tests)</div>
+      <div>✓ src/lib/sequence.test.ts (4 tests)</div>
+      <div>✓ src/lib/showcase.test.ts (2 tests)</div>
+      <div>&nbsp;</div>
+      <div class="ok">Test Files  3 passed (3)</div>
+      <div class="ok">Tests       17 passed (17)</div>
+    </div>
+    <p class="note">
+      仕込んだ自己引用（「心臓がうるさい」）と矛盾（5月の諦め ↔ 10月の決断）が、実際に検出されることを検証している。
+    </p>
+
+    <h2>約束</h2>
+    <pre>1. 捏造しない — 生成物は実在の断片に接地し、思考の足跡を必ず表示する。
+2. 忖度しない — 同意や励ましではなく、矛盾と開いた輪を提示する。
+3. 依存させない — 通知は多くしない。使わせ続けるための設計をしない。
+4. 渡さない — 感情データは端末の外に出さない。いつでもJSONで持ち出せる。
+5. AIに考えさせない — 思考はエンジン。AIには文体だけを許し、門番が検証する。</pre>
+  </body>
+</html>

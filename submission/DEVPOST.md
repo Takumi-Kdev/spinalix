@@ -66,8 +66,8 @@ typescript, react, vite, tailwindcss, d3-force, d3-zoom, zustand, electron, node
 - **Macアプリ（ダウンロード）**: https://github.com/Takumi-Kdev/spinalix/releases/latest
 - プロダクトページ（デモは「デモを開く」から）: https://takumi-kdev.github.io/spinalix/
 - GitHub: https://github.com/Takumi-Kdev/spinalix
-- 動画: （YouTube限定公開URLを貼る）
+- 動画: （YouTube限定公開URLを貼る → `submission/video/demo.mp4` をアップロード）
 
 ## AI利用の開示（正直に）
 
-コーディングエージェント（opencode / DeepSeek V4.1）を作業パートナーとして使用しました（ルール上、AI利用は全面許可）。プロダクト自体はAPIキーなしで全機能が動作します。デモの記憶データは、架空ペルソナの8ヶ月分 + 作者本人の実体験の一部（匿名化）を混在させたものです。
+コーディングエージェント（opencode / DeepSeek V4.1）を作業パートナーとして使用しました（ルール上、AI利用は全面許可）。プロダクト自体はAPIキーなしで全機能が動作します。デモの記憶データは、架空ペルソナの8ヶ月分 + 作者本人の実体験（匿名化済み）を混在させたものです。デモ動画は、実際の画面の自動収録と合成音声（macOS Kyoko）・英語字幕で構成しています。

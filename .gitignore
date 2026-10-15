@@ -5,3 +5,7 @@ dist
 *.local
 release
 build/icon.iconset
+submission/video/raw
+submission/video/audio
+submission/video/scenes
+submission/review

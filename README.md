@@ -9,7 +9,7 @@
 |---|---|
 | 🖥 **デスクトップアプリ（Mac・ダウンロードして即利用）** | [Releases から `Spinalix.dmg` をダウンロード](../../releases/latest) |
 | 🌐 プロダクトページ（デモは「デモを開く」から・キー不要） | https://takumi-kdev.github.io/spinalix/ |
-| 🎬 5分動画 | （提出後リンク） |
+| 🎬 5分動画（提出用・英語字幕入り） | YouTube限定公開（`submission/video/demo.mp4` をアップロード） |
 | 🧠 開発者向け | `npm install && npm run brain`（QRでスマホ接続）/ `npm test` |
 
 ---
