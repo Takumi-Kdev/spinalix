@@ -76,6 +76,33 @@ function AppShell() {
     return () => window.clearInterval(id)
   }, [pullFromServer])
 
+  // ショートカット（プロツールの手触り）
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null
+      const typing = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+      if (e.key === 'Escape') {
+        setCaptureOpen(false)
+        setSettingsOpen(false)
+        setSearchOpen(false)
+        setOpenFragment(null)
+        return
+      }
+      if (typing) return
+      if (e.key === 'n') setCaptureOpen(true)
+      if (e.key === '/') {
+        e.preventDefault()
+        const input = document.querySelector<HTMLInputElement>('aside input')
+        if (input) input.focus()
+        else setSearchOpen(true)
+      }
+      const idx = Number(e.key)
+      if (idx >= 1 && idx <= NAV.length) setView(NAV[idx - 1].id)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   useEffect(() => {
     if (!autonomous) return
     const id = window.setInterval(() => {
@@ -244,6 +271,7 @@ function AppShell() {
             <p className="tnum mt-1 text-[10px] text-faint">
               {fragments.length} fragments / {thoughts.length} thoughts
             </p>
+            <p className="mt-2 text-[10px] text-faint">n 記憶する ・ 1–6 切替 ・ / 検索</p>
           </div>
         </aside>
 

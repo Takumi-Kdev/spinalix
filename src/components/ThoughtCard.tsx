@@ -83,6 +83,7 @@ export function ThoughtCard({
       </div>
 
       <p className="mt-2 text-[11.5px] text-[#5f584a]">{meta.hint}</p>
+      {thought.trace?.note && <p className="tnum mt-1 text-[10px] text-[#8d8474]">{thought.trace.note}</p>}
 
       {thought.steps.length > 0 && (
         <div className="mt-5 border-t pt-4 letter-rule">
