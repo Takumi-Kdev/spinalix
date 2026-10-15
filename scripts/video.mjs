@@ -24,6 +24,63 @@ for (const d of [RAW, AUD, SCN]) mkdirSync(d, { recursive: true })
 const PAD = 0.7 // 各シーンの末尾に足す静けさ（秒）
 const RATE = 172
 
+
+// ────────────────────────────────────────────────────────────────
+// 英語ナレーション（ニューラルTTS: en-US-AndrewNeural）
+// ────────────────────────────────────────────────────────────────
+const EN = {
+  's0-hook':
+    "This sentence was written by AI. But the only words it used were mine. A single line from March tenth: my heart was pounding. And in September, I quoted it back, without even noticing. Spinalix found that. And it shows exactly how. The origin. The spreading. The leaps. Even the paths it rejected.",
+  's1-problem':
+    "Notes pile up. And they are never read again. When we ask an AI to think for us, we get average answers. The problem is not that we lack memory. It is that our own memories never get used. Spinalix is not a place to store memories. It is an engine that thinks with them.",
+  's2-engine':
+    "The heart is a memory engine that runs entirely on your device. From emotional intensity and a forgetting curve, it computes what is warm inside you right now. That is spreading activation. Then it walks your memory graph, with beam search, in five different ways of thinking. A phrase from March, quoted back in September. It finds paths like that, deterministically.",
+  's3-verify':
+    "Even in API mode, the AI is never allowed to think. Its output passes through a verifier. Quotes that do not exist in your memories are rejected. Invented dates are rejected. Generic encouragement is rejected. Seventeen tests guard that promise.",
+  's4-capture':
+    "Capture from anywhere. One shortcut, five seconds. No folders, no tags, no organizing.",
+  's5-circuit':
+    "Fragments become circuits, automatically. Emotion is the color. And those vermilion sparks: that is the exact path the recall just walked.",
+  's6-flow':
+    "Eight months of emotion, as a single river. You sank in May. You came back in August. You can see it at a glance.",
+  's7-stream':
+    "This brain thinks even when I ask it nothing. Every twenty-four seconds it walks my memory, and stacks a new letter. In May, you said, give up on studying abroad. And in October, you say, calmer than March. Which one is the real you? It can be uncomfortable. But that is what it means to not flatter.",
+  's8-purpose':
+    "When a decision is close, there is Purpose mode. Out of eight months of fragments, it assembles a crystallization. With sources. An emotional arc. Insights. Contradictions. And the next step.",
+  's9-scale':
+    "Three things make it scale. One: processing happens on device, so there is zero cloud cost per user. Two: your memory is a single local file. The app lives in your menu bar, and your phone joins the same brain over the local network. Three: at ten thousand fragments, the pure function engine swaps in bucketed search.",
+  's10-business':
+    "Free stays fully local. Pro is seven hundred and eighty yen a month. AI journals like Rosebud charge twelve ninety nine, and raised six million dollars. The digital journaling market grows about ten percent a year. Most of the cost lives on device, so gross margin stays above ninety five percent. And the AI stylist mode sells something rare: trust.",
+  's11-close':
+    "Spinalix will not rate you. It will not flatter you. It just gives back the parts of you that you had forgotten. Your memory stays with you. Spinalix. A memory that speaks to you.",
+}
+
+const TTS_PY = '/private/var/folders/68/6nv0blqn0p388gnx12xcbg740000gn/T/opencode/tts-venv/bin/edge-tts'
+
+// 英語テキスト → 字幕チャンク（文単位・文字数比例のタイミング）
+function buildSubs(text, duration) {
+  const sentences = text.split(/(?<=[.!?:])\s+/).map((x) => x.trim()).filter(Boolean)
+  const chunks = []
+  let cur = ''
+  for (const sentence of sentences) {
+    if ((cur + ' ' + sentence).trim().length > 96 && cur) {
+      chunks.push(cur.trim())
+      cur = sentence
+    } else {
+      cur = (cur + ' ' + sentence).trim()
+    }
+  }
+  if (cur) chunks.push(cur.trim())
+  const totalChars = chunks.reduce((a, b) => a + b.length, 0) || 1
+  const subs = []
+  let t = 0.25
+  for (const c of chunks) {
+    subs.push([Number(t.toFixed(2)), c])
+    t += (c.length / totalChars) * (duration - 0.6)
+  }
+  return subs
+}
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 // ────────────────────────────────────────────────────────────────
@@ -295,10 +352,11 @@ const SCENES = [
 const probe = (file) => Number(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', file]).toString().trim())
 
 async function narrate(scene) {
-  const aiff = `${AUD}/${scene.id}.aiff`
+  const text = EN[scene.id] ?? scene.jp
+  const mp3 = `${AUD}/${scene.id}.mp3`
   const wav = `${AUD}/${scene.id}.wav`
-  execFileSync('say', ['-v', 'Kyoko', '-r', String(RATE), '-o', aiff, scene.jp])
-  execFileSync('ffmpeg', ['-y', '-i', aiff, '-ar', '48000', '-ac', '2', wav], { stdio: 'ignore' })
+  execFileSync(TTS_PY, ['--voice', 'en-US-AndrewNeural', '--rate=-4%', '--text', text, '--write-media', mp3])
+  execFileSync('ffmpeg', ['-y', '-i', mp3, '-ar', '48000', '-ac', '2', wav], { stdio: 'ignore' })
   return probe(wav)
 }
 
@@ -310,7 +368,8 @@ async function main() {
   for (const scene of SCENES) {
     const dur = await narrate(scene)
     const total = Math.ceil((dur + PAD) * 10) / 10
-    plan.push({ scene, audio: dur, total })
+    const subs = buildSubs(EN[scene.id] ?? '', dur)
+    plan.push({ scene, audio: dur, total, subs })
     console.log(`[audio] ${scene.id}: ${dur.toFixed(1)}s → scene ${total.toFixed(1)}s`)
   }
   let t = 0
@@ -331,7 +390,7 @@ async function main() {
     // シーン開始時から字幕をセット（run 内の sleep と並行して切り替え）
     const subTimer = setInterval(() => {}, 1e9) // プレースホルダ（実行中は使わない）
     let sceneDone = false
-    const subs = p.scene.subs
+    const subs = p.subs
     ;(async () => {
       const start = Date.now()
       let idx = 0
