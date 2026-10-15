@@ -14,6 +14,16 @@
 
 ---
 
+## スクリーンショット
+
+| ホーム（想起 + 思考の足跡） | 記憶回路（発火） | 流れ（感情の川） |
+|---|---|---|
+| ![home](submission/gallery/01-home.png) | ![circuit](submission/gallery/02-circuit.png) | ![flow](submission/gallery/03-flow.png) |
+
+| 思考の記録（自立思考） | 思考結晶 | 設定（QR接続・取り込み） |
+|---|---|---|
+| ![stream](submission/gallery/04-stream.png) | ![purpose](submission/gallery/05-purpose.png) | ![settings](submission/gallery/06-settings-qr.png) |
+
 ## これは何か
 
 既存の「AIメモリー」は**保存と検索**です。Spinalixは**記憶をするAI**です。
