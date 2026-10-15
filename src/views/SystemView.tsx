@@ -115,6 +115,25 @@ export function SystemView({ onOpenFragment }: { onOpenFragment: (id: string) =>
         </div>
       </section>
 
+      {/* テーマの交差 */}
+      {stats.analysis.themePairs.length > 0 && (
+        <section>
+          <h3 className="text-[14px] text-bone">テーマの交差</h3>
+          <p className="mt-1 text-[11.5px] text-faint">同じ断片に一緒に現れるテーマ。切り離せない二つが見えます。</p>
+          <div className="mt-3 divide-y divide-rule border-y border-rule">
+            {stats.analysis.themePairs.slice(0, 6).map((p) => (
+              <div key={`${p.a}-${p.b}`} className="flex items-baseline gap-4 py-2">
+                <span className="text-[12.5px] text-bone">
+                  {p.a} <span className="text-faint">×</span> {p.b}
+                </span>
+                <span className="tnum ml-auto text-[11px] text-muted">{p.count}回</span>
+                <span className="tnum text-[10.5px] text-faint">最後 {formatJP(p.latest)}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* 開いた輪 */}
       {stats.analysis.openLoops.length > 0 && (
         <section>

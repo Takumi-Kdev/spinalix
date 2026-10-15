@@ -58,6 +58,13 @@ export function HomeView({
         </div>
       )}
 
+      {thoughtsCount <= 1 && (
+        <p className="border border-rule px-4 py-3 text-[12px] leading-relaxed text-muted">
+          <span className="text-bone">はじめての方へ。</span>{' '}
+          便箋の「思考の足跡をひらく」を押すと、この想起がどう生まれたか（起点・拡散・跳躍・解剖）まで見られます。
+        </p>
+      )}
+
       {/* 数字は「一行の文」で（メトリクスカードは作らない） */}
       <p className="text-[12px] leading-relaxed text-faint">
         断片 <span className="tnum text-muted">{filteredCount === totalFragments ? totalFragments : `${filteredCount}/${totalFragments}`}</span>・回路{' '}

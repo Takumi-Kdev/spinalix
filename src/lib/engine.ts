@@ -18,6 +18,7 @@ import type {
   ThoughtKind,
 } from './types'
 import { blendEmotion, dominantEmotion, EMOTION_META, emotionDistance, intensityOf } from './emotion'
+import { analyzeMemory } from './analysis'
 import { bigrams, coverage, extractQuotes, jaccard, lastSentence, normalize, pairKey, shortQuote } from './text'
 import { daysBetween, formatJP, monthKey, monthLabel } from './dates'
 import { think, generateSuddenThought } from './think'
@@ -86,8 +87,13 @@ export function buildLinks(fragments: Fragment[], opts: EngineOptions = {}): Lin
       }
 
       // tension: 同じテーマで、感情の向きが正反対（矛盾・価値観の揺れ）
+      // 「なんとなく気分が違う」ではなく、意志や覚悟の食い違いだけを拾う
       const dv = Math.abs(a.emotion.valence - b.emotion.valence)
-      if (themes.length > 0 && dv >= 0.85 && days >= 14) {
+      const STANCE = /べき|ほうがいい|諦め|決め|決断|しよう|やめ|無理|現実|怖い|覚悟|したい|行きたい|出す/
+      const maxIa = Math.max(0, ...Object.values(a.emotion.intensities).map((v) => v ?? 0))
+      const maxIb = Math.max(0, ...Object.values(b.emotion.intensities).map((v) => v ?? 0))
+      const hasStance = STANCE.test(a.text) || STANCE.test(b.text)
+      if (themes.length > 0 && dv >= 0.85 && days >= 14 && Math.min(maxIa, maxIb) >= 0.45 && (hasStance || dv >= 1.1)) {
         raw.push({
           a: a.id,
           b: b.id,
@@ -197,6 +203,7 @@ export function adoptThought(thought: SuddenThought, fragments: Fragment[]): Fra
 // ─────────────────────────────────────────────────────────
 
 export function assembleCrystal(intention: string, fragments: Fragment[], links: Link[], now: Date = new Date()): ThoughtCrystal {
+  const analysis = analyzeMemory(fragments, now)
   const q = bigrams(intention)
   const directThemes = [...new Set(fragments.flatMap((f) => f.themes))].filter((t) => intention.includes(t))
   const words = intention.replace(/[、。！？!?.,\s]/g, '')
@@ -277,6 +284,34 @@ export function assembleCrystal(intention: string, fragments: Fragment[], links:
     })
   }
 
+  // 開いた輪（あれば最優先で指摘する）
+  const loop = topTheme ? analysis.openLoops.find((l) => l.theme === topTheme) : undefined
+  if (loop) {
+    const want = loop.want[loop.want.length - 1]
+    const lastAction = loop.actions[loop.actions.length - 1]
+    insights.unshift({
+      text:
+        `「${loop.theme}」には、開いた輪がある。「${shortQuote(byIdOf(fragments, want.fragmentId)?.text ?? '', 20)}」と${formatJP(want.when)}に書いて、` +
+        (lastAction ? `行動の最後は${formatJP(lastAction.when)}（${loop.actions.length}回）。` : '行動の言葉はまだ0回。') +
+        `${loop.monthsQuiet}ヶ月、開いたまま。`,
+      evidence: [want.fragmentId, ...(lastAction ? [lastAction.fragmentId] : [])],
+    })
+  } else {
+    const wilCount = fragments.filter((f) => /やりたい|行きたい|行ってみたい|始めたい|挑戦/.test(f.text)).length
+    const doCount = fragments.filter((f) => /始めた|申し込|動き出|動いた|決めた|予約した|調べた|出した/.test(f.text)).length
+    if (wilCount > doCount) {
+      insights.push({
+        text: `「やりたい」の言葉は${wilCount}回。それに対して「やった」は${doCount}回。気持ちは十分に熟している。次に必要なのは決意ではなく、日付。`,
+        evidence: pushEvidence(fids),
+      })
+    } else if (doCount > wilCount) {
+      insights.push({
+        text: `この問いについて、あなたはもう動いている（「やった」の言葉は${doCount}回）。残っているのは、決意ではなく、決めるという一言だけかもしれない。`,
+        evidence: pushEvidence(fids),
+      })
+    }
+  }
+
   const peopleTally = new Map<string, number>()
   for (const s of recalledPool) for (const p of s.f.people) peopleTally.set(p, (peopleTally.get(p) ?? 0) + 1)
   const topPeople = [...peopleTally.entries()].sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0]))
@@ -288,18 +323,16 @@ export function assembleCrystal(intention: string, fragments: Fragment[], links:
     })
   }
 
-  const wilCount = fragments.filter((f) => /やりたい|行きたい|行ってみたい|始めたい|挑戦/.test(f.text)).length
-  const doCount = fragments.filter((f) => /始めた|申し込|動き出|動いた|決めた|予約した|調べた|出した/.test(f.text)).length
-  if (wilCount > doCount) {
-    insights.push({
-      text: `「やりたい」の言葉は${wilCount}回。それに対して「やった」は${doCount}回。気持ちは十分に熟している。次に必要なのは決意ではなく、日付。`,
-      evidence: pushEvidence(fids),
-    })
-  } else if (doCount > wilCount) {
-    insights.push({
-      text: `この問いについて、あなたはもう動いている（「やった」の言葉は${doCount}回）。残っているのは、決意ではなく、決めるという一言だけかもしれない。`,
-      evidence: pushEvidence(fids),
-    })
+  // テーマの交差（この問いが、いつも何と一緒に現れるか）
+  if (topTheme) {
+    const pair = analysis.themePairs.find((p) => (p.a === topTheme || p.b === topTheme) && p.count >= 3)
+    if (pair) {
+      const other = pair.a === topTheme ? pair.b : pair.a
+      insights.push({
+        text: `「${topTheme}」の話は、いつも「${other}」と一緒に現れる（${pair.count}回・最後は${formatJP(pair.latest)}）。この二つは、切り離して考えられない。`,
+        evidence: pushEvidence(fids),
+      })
+    }
   }
 
   const blended = recalledPool.map((s) => s.f.emotion).reduce((acc, e) => blendEmotion(acc, e))
@@ -318,7 +351,7 @@ export function assembleCrystal(intention: string, fragments: Fragment[], links:
   if (tensionLinks.length > 0) {
     const best = [...tensionLinks].sort(
       (x, y) =>
-        y.weight + narrativeBonus(x, fragments) - (x.weight + narrativeBonus(y, fragments)) ||
+        y.weight + narrativeBonus(y, fragments) - (x.weight + narrativeBonus(x, fragments)) ||
         pairKey(x.a, x.b).localeCompare(pairKey(y.a, y.b)),
     )[0]
     const fa = fragments.find((f) => f.id === best.a)
@@ -349,10 +382,14 @@ export function assembleCrystal(intention: string, fragments: Fragment[], links:
     recalled,
     arcLabel,
     arcPoints,
-    insights: insights.slice(0, 3),
+    insights: insights.slice(0, 4),
     tension,
     nextSteps,
   }
+}
+
+function byIdOf(fragments: Fragment[], id: string): Fragment | undefined {
+  return fragments.find((f) => f.id === id)
 }
 
 /** ホームに出す「今の想起」— 未処理の最新 or 新規生成 */

@@ -1,7 +1,7 @@
 import { it } from 'vitest'
 import { PERSONA_FRAGMENTS, USER_FRAGMENTS, type SeedFragment } from './persona'
 import { analyzeEmotion } from './emotion'
-import { buildLinks } from './engine'
+import { assembleCrystal, buildLinks } from './engine'
 import { generateSuddenThought } from './think'
 import { activate, primingSeeds } from './activation'
 import type { Fragment, Preferences, SuddenThought } from './types'
@@ -28,6 +28,12 @@ it('showcase v2', () => {
   console.log('\nシード:', JSON.stringify(seeds.map((s) => ({ id: s.id, w: s.weight, r: s.reason }))))
   const top = [...act.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5)
   console.log('活性トップ:', JSON.stringify(top.map(([id, v]) => ({ id, v: Number(v.toFixed(3)) }))))
+
+  const crystal = assembleCrystal('留学に行くべきか、迷っている', fragments, links, now)
+  console.log('\n===== 結晶 =====')
+  console.log('弧:', crystal.arcLabel)
+  for (const i of crystal.insights) console.log('・' + i.text)
+  if (crystal.tension) console.log('矛盾:', crystal.tension.pastWhen, '↔', crystal.tension.question)
 
   let thoughts: SuddenThought[] = []
   for (let i = 0; i < 7; i++) {

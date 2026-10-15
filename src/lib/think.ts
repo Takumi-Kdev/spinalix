@@ -103,6 +103,11 @@ export function thinkWithTrace(
       const first = fragments.find((f) => f.id === d.path[0])
       const last = fragments.find((f) => f.id === d.path[d.path.length - 1])
       if (first && last) s += Math.min(0.16, Math.abs(first.emotion.valence - last.emotion.valence) * 0.12)
+      // 「最近の側」が新しいほど、いま効いている矛盾として優先する
+      if (last) {
+        const ageDays = (now.getTime() - new Date(last.createdAt).getTime()) / 86400000
+        s += Math.max(0, (90 - ageDays) / 90) * 0.06
+      }
     }
     for (const id of d.path) s -= 0.12 * (recentUsage.get(id) ?? 0)
     for (const t of prevThoughts) {

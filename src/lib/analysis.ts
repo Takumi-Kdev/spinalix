@@ -34,12 +34,20 @@ export interface PersonProfile {
   recentDelta: number
 }
 
+export interface ThemePair {
+  a: string
+  b: string
+  count: number
+  latest: string
+}
+
 export interface ThemeStats {
   themes: ThemeArc[]
   openLoops: OpenLoop[]
   people: PersonProfile[]
   questions: { fragmentId: string; text: string; when: string }[]
   quietThemes: { theme: string; monthsQuiet: number; lastAt: string }[]
+  themePairs: ThemePair[]
 }
 
 const WANT = /やりたい|行きたい|行ってみたい|始めたい|始めよう|挑戦|してみたい|しようと思う|つもり|したい/
@@ -141,7 +149,25 @@ export function analyzeMemory(fragments: Fragment[], now: Date = new Date()): Th
     }
   }
 
-  return { themes, openLoops, people: profiles, questions, quietThemes }
+  // ── テーマの交差（同じ断片に一緒に現れるテーマ）─────
+  const pairCount = new Map<string, { count: number; latest: string }>()
+  for (const f of fragments) {
+    const ts = [...new Set(f.themes)]
+    for (let i = 0; i < ts.length; i++) {
+      for (let j = i + 1; j < ts.length; j++) {
+        const [a, b] = [ts[i], ts[j]].sort()
+        const key = `${a}|||${b}`
+        const cur = pairCount.get(key) ?? { count: 0, latest: '' }
+        pairCount.set(key, { count: cur.count + 1, latest: f.createdAt > cur.latest ? f.createdAt : cur.latest })
+      }
+    }
+  }
+  const themePairs: ThemePair[] = [...pairCount.entries()]
+    .map(([key, v]) => ({ a: key.split('|||')[0], b: key.split('|||')[1], count: v.count, latest: v.latest }))
+    .filter((p) => p.count >= 2)
+    .sort((x, y) => y.count - x.count || x.a.localeCompare(y.a))
+
+  return { themes, openLoops, people: profiles, questions, quietThemes, themePairs }
 }
 
 export function themeEmotionLabel(fragments: Fragment[]): { label: string; color: string } {
