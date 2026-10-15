@@ -119,7 +119,8 @@ export function startServer({ distDir, dataDir, port = 5310, host = '0.0.0.0' } 
 }
 
 // CLIとして直接実行された場合
-const isDirect = process.argv[1] && import.meta.url === `file://${resolve(process.argv[1])}`
+import { pathToFileURL } from 'node:url'
+const isDirect = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href
 if (isDirect) {
   const { lan, dataFile } = await startServer({ port: Number(process.env.PORT ?? 5310) })
   console.log('')
