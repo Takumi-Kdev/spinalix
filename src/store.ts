@@ -185,7 +185,16 @@ export const useSpinalix = create<SpinalixState>((set, get) => {
         local = null
       }
 
+      // ローカル（または同一LAN）でのみ「常駐する脳」を探す。
+      // 公開サイト（github.io 等）では不要なリクエストと404エラーを出さない。
+      const host = window.location.hostname
+      const isLocalHost =
+        host === 'localhost' ||
+        host === '127.0.0.1' ||
+        host === '::1' ||
+        /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(host)
       try {
+        if (!isLocalHost) throw new Error('public host: local brain not applicable')
         const info = await fetch('/api/info', { signal: AbortSignal.timeout(1200) })
         if (info.ok) {
           const meta = (await info.json()) as { mode: string; lan: string }
