@@ -61,6 +61,7 @@ function AppShell() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [openFragment, setOpenFragment] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  const [searchFocused, setSearchFocused] = useState(false)
   const [emotionFilter, setEmotionFilter] = useState<Set<EmotionKey>>(new Set())
   const [themeFilter, setThemeFilter] = useState<string | null>(null)
 
@@ -113,6 +114,7 @@ function AppShell() {
   }, [autonomous, runCycle])
 
   const pending = useMemo(() => thoughts.find((t) => t.status === 'new') ?? null, [thoughts])
+  const activePath = useMemo(() => pending?.path ?? [], [pending])
   const themes = useMemo(() => {
     const tally = new Map<string, number>()
     for (const f of fragments) for (const t of f.themes) tally.set(t, (tally.get(t) ?? 0) + 1)
@@ -157,10 +159,19 @@ function AppShell() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => window.setTimeout(() => setSearchFocused(false), 140)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setSearch('')
+                  setSearchFocused(false)
+                  ;(e.target as HTMLInputElement).blur()
+                }
+              }}
               placeholder="記憶を検索"
               className="w-full bg-transparent text-[12.5px] text-bone outline-none placeholder:text-faint"
             />
-            {searchHits.length > 0 && (
+            {searchFocused && searchHits.length > 0 && (
               <div className="absolute left-0 right-0 top-full z-20 mt-1 border border-rule bg-ink-2 p-1">
                 {searchHits.map((f) => (
                   <button
@@ -308,7 +319,7 @@ function AppShell() {
             />
           )}
           {view === 'circuit' && (
-            <GraphView fragments={filtered} activePath={pending?.path ?? []} onOpenFragment={setOpenFragment} allCount={fragments.length} />
+            <GraphView fragments={filtered} activePath={activePath} onOpenFragment={setOpenFragment} allCount={fragments.length} />
           )}
           {view === 'flow' && <TimelineView fragments={filtered} onOpenFragment={setOpenFragment} />}
           {view === 'stream' && (

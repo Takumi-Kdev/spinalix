@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useSpinalix } from '../store'
 import { ThoughtCard } from '../components/ThoughtCard'
 import { formatJP } from '../lib/dates'
@@ -36,9 +36,13 @@ export function HomeView({
     [fragments],
   )
 
-  if (!pending && fragments.length > 0 && !thinking) {
-    window.setTimeout(() => advanceThought(), 50)
-  }
+  useEffect(() => {
+    if (!pending && fragments.length > 0 && !thinking) {
+      const t = window.setTimeout(() => advanceThought(), 60)
+      return () => window.clearTimeout(t)
+    }
+    return undefined
+  }, [pending, fragments.length, thinking, advanceThought])
 
   return (
     <div className="max-w-[720px] space-y-8">

@@ -64,6 +64,7 @@ export function GraphView({
   const mouseRef = useRef({ x: 0, y: 0 })
   const [hovered, setHovered] = useState<{ id: string; x: number; y: number } | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
+  const didFitRef = useRef(false)
 
   const ids = useMemo(() => new Set(fragments.map((f) => f.id)), [fragments])
   const graph = useMemo(() => {
@@ -342,8 +343,10 @@ export function GraphView({
     }
     raf = requestAnimationFrame(loop)
     const fitTimer = window.setTimeout(() => {
+      if (didFitRef.current) return
       const nodes = nodesRef.current
       if (nodes.length === 0) return
+      didFitRef.current = true
       let minX = Infinity
       let maxX = -Infinity
       let minY = Infinity

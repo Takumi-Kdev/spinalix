@@ -122,10 +122,10 @@ export function startServer({ distDir, dataDir, port = 5310, host = '0.0.0.0' } 
 import { pathToFileURL } from 'node:url'
 const isDirect = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href
 if (isDirect) {
-  const { lan, dataFile } = await startServer({ port: Number(process.env.PORT ?? 5310) })
+  const { port: actualPort, lan, dataFile } = await startServer({ port: Number(process.env.PORT ?? 5310) })
   console.log('')
   console.log('  Spinalix — 脳が常駐しています')
-  console.log('  このMac:      http://localhost:' + (process.env.PORT ?? 5310))
+  console.log('  このMac:      http://localhost:' + actualPort)
   console.log('  スマホから:    ' + lan)
   console.log('  記憶の保存先:  ' + dataFile)
   console.log('  （データはこのファイルの中だけに存在します。停止は Ctrl+C）')
