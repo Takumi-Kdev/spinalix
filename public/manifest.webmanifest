@@ -1,0 +1,19 @@
+{
+  "name": "Spinalix",
+  "short_name": "Spinalix",
+  "description": "記憶が、あなたに話しかける。断片から想起を生成するローカル完結の思考脳。",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b0e14",
+  "theme_color": "#0b0e14",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

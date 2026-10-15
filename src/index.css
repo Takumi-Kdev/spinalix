@@ -1,0 +1,143 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-ink: #0b0e14;
+  --color-ink-2: #10141d;
+  --color-panel: #141926;
+  --color-hairline: rgba(255, 255, 255, 0.07);
+  --color-bone: #ece7dc;
+  --color-bone-2: #d9d2c3;
+  --color-muted: #8d96a8;
+  --color-faint: #5b6475;
+  --color-amber: #f0b35c;
+  --color-amber-soft: #ffd48f;
+  --color-teal: #7fd1ae;
+  --color-coral: #f07b6a;
+  --color-sky: #8fb8e8;
+  --font-sans: 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', system-ui, sans-serif;
+  --font-serif: 'Shippori Mincho', 'Hiragino Mincho ProN', serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(1200px 700px at 75% -10%, rgba(240, 179, 92, 0.07), transparent 60%),
+    radial-gradient(900px 600px at 10% 110%, rgba(143, 184, 232, 0.06), transparent 60%),
+    var(--color-ink);
+  color: var(--color-bone);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+::selection {
+  background: rgba(240, 179, 92, 0.35);
+}
+
+/* ── 紙の記憶カード ─────────────────────────── */
+.paper {
+  background: linear-gradient(178deg, #f2ecdf 0%, #e9e2d2 100%);
+  color: #1b1e26;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 10px 30px -18px rgba(0, 0, 0, 0.9);
+}
+
+/* ── 想起カード ─────────────────────────────── */
+.thought-card {
+  position: relative;
+  border-radius: 20px;
+  background:
+    linear-gradient(var(--color-ink-2), var(--color-ink-2)) padding-box,
+    linear-gradient(140deg, rgba(240, 179, 92, 0.55), rgba(240, 179, 92, 0.06) 45%, rgba(143, 184, 232, 0.25)) border-box;
+  border: 1px solid transparent;
+  box-shadow: 0 24px 60px -30px rgba(240, 179, 92, 0.28), 0 2px 0 rgba(255, 255, 255, 0.03) inset;
+}
+
+.thought-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  background: radial-gradient(500px 160px at 20% 0%, rgba(240, 179, 92, 0.1), transparent 70%);
+  pointer-events: none;
+}
+
+.grain::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.028) 1px, transparent 1px);
+  background-size: 3px 3px;
+  z-index: 50;
+}
+
+/* ── アニメーション ─────────────────────────── */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rise {
+  animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes pulseGlow {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.pulse-glow {
+  animation: pulseGlow 2.6s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(100deg, rgba(240, 179, 92, 0.12) 30%, rgba(240, 179, 92, 0.4) 50%, rgba(240, 179, 92, 0.12) 70%);
+  background-size: 200% 100%;
+  animation: shimmer 2.2s linear infinite;
+}
+
+/* スクロールバー（控えめに） */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .pulse-glow,
+  .shimmer {
+    animation: none;
+  }
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
