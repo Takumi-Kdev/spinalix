@@ -55,6 +55,7 @@ export interface SuddenThought {
   score: number
   fingerprint: string
   status: 'new' | 'adopted' | 'rejected'
+  trace?: ThinkTrace
 }
 
 /** 思考結晶 — 目的モードの出力 */
@@ -93,4 +94,14 @@ export interface Preferences {
   adoptedKinds: Record<ThoughtKind, number>
   rejectedKinds: Record<ThoughtKind, number>
   adoptedThoughtTexts: string[]
+}
+
+/** 思考の解剖 — 想起がどう生まれたかの全記録（UIで開示する） */
+export interface ThinkTrace {
+  cycle: number
+  preferredMode: string
+  seeds: { id: string; date: string; reason: string; activation: number }[]
+  walks: { mode: string; score: number; path: string[]; chosen: boolean }[]
+  drafts: { kind: string; mode: string; score: number; adjusted: number; chosen: boolean }[]
+  note?: string
 }

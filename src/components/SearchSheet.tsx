@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useSpinalix } from '../store'
 import { formatJP } from '../lib/dates'
-import { emotionTheme } from '../lib/design'
+import { emotionColor } from '../lib/design'
 
 /** モバイル用の検索シート */
 export function SearchSheet({
@@ -28,8 +28,8 @@ export function SearchSheet({
   return (
     <div className="fixed inset-0 z-40">
       <button aria-label="閉じる" className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="absolute inset-x-0 bottom-0 mx-auto flex max-h-[86vh] max-w-lg flex-col rounded-t-3xl border border-hairline bg-ink-2 px-4 pb-6 pt-4">
-        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-white/15" />
+      <div className="absolute inset-x-0 bottom-0 mx-auto flex max-h-[86vh] max-w-lg flex-col border-t border-rule bg-ink-2 px-4 pb-6 pt-4">
+        
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -39,7 +39,7 @@ export function SearchSheet({
         />
         <div className="mt-3 flex-1 space-y-1.5 overflow-y-auto">
           {results.map((f) => {
-            const theme = emotionTheme(f.emotion)
+            const color = emotionColor(f)
             return (
               <button
                 key={f.id}
@@ -47,9 +47,9 @@ export function SearchSheet({
                   onOpenFragment(f.id)
                   onClose()
                 }}
-                className="flex w-full items-start gap-3 rounded-lg border border-hairline bg-white/[0.02] px-3 py-2.5 text-left transition hover:border-white/20"
+                className="flex w-full items-start gap-3 border-b border-rule py-2.5 text-left transition hover:bg-white/[0.02]"
               >
-                <span className="mt-1 h-8 w-[3px] shrink-0 rounded" style={{ background: theme.gradient }} />
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: color }} />
                 <span>
                   <span className="mono text-faint">{formatJP(f.createdAt)}</span>
                   <span className="mt-0.5 block text-[12.5px] leading-snug text-muted">{f.text.slice(0, 52)}</span>

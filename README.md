@@ -8,7 +8,7 @@
 | | |
 |---|---|
 | 🖥 **デスクトップアプリ（Mac・ダウンロードして即利用）** | [Releases から `Spinalix.dmg` をダウンロード](../../releases/latest) |
-| 🌐 ライブデモ（審査員用・キー不要） | https://takumi-kdev.github.io/spinalix/ |
+| 🌐 プロダクトページ（デモは「デモを開く」から・キー不要） | https://takumi-kdev.github.io/spinalix/ |
 | 🎬 5分動画 | （提出後リンク） |
 | 🧠 開発者向け | `npm install && npm run brain`（QRでスマホ接続）/ `npm test` |
 
@@ -16,13 +16,17 @@
 
 ## スクリーンショット
 
-| ホーム（想起 + 思考の足跡） | 記憶回路（発火） | 流れ（感情の川） |
-|---|---|---|
-| ![home](submission/gallery/01-home.png) | ![circuit](submission/gallery/02-circuit.png) | ![flow](submission/gallery/03-flow.png) |
+| プロダクトページ |
+|---|
+| ![landing](submission/gallery/00-landing.png) |
 
-| 思考の記録（自立思考） | 思考結晶 | 設定（QR接続・取り込み） |
+| ホーム（想起の便箋） | 回路（記憶回路） | 流れ（感情の川） |
 |---|---|---|
-| ![stream](submission/gallery/04-stream.png) | ![purpose](submission/gallery/05-purpose.png) | ![settings](submission/gallery/06-settings-qr.png) |
+| ![home](submission/gallery/02-home.png) | ![circuit](submission/gallery/03-circuit.png) | ![flow](submission/gallery/04-flow.png) |
+
+| 思考（自立思考の記録） | 目的（思考結晶） | 計測（システムの状態） |
+|---|---|---|
+| ![stream](submission/gallery/05-stream.png) | ![purpose](submission/gallery/06-purpose.png) | ![system](submission/gallery/07-system.png) |
 
 ## これは何か
 

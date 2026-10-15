@@ -18,12 +18,12 @@ import { formatJP } from '../lib/dates'
 import { emotionTheme } from '../lib/design'
 
 const LINK_STYLE: Record<LinkKind, { color: string; label: string; width: number; curve: number }> = {
-  recall: { color: '#f0b35c', label: '自己引用', width: 2.2, curve: 0.18 },
-  tension: { color: '#f07b6a', label: '矛盾', width: 1.6, curve: 0.22 },
-  echo: { color: '#7fd1ae', label: '反響', width: 1.3, curve: 0.16 },
-  similar: { color: '#4a5a78', label: '近さ', width: 0.7, curve: 0.08 },
-  theme: { color: '#2b3a56', label: 'テーマ', width: 0.7, curve: 0.06 },
-  person: { color: '#7e93cc', label: '人', width: 0.8, curve: 0.1 },
+  recall: { color: '#c8442a', label: '自己引用', width: 1.6, curve: 0.18 },
+  tension: { color: '#9a7fa8', label: '矛盾', width: 1.2, curve: 0.22 },
+  echo: { color: '#7d9a6f', label: '反響', width: 1.0, curve: 0.16 },
+  similar: { color: '#4a4238', label: '近さ', width: 0.5, curve: 0.08 },
+  theme: { color: '#332e26', label: 'テーマ', width: 0.5, curve: 0.06 },
+  person: { color: '#5b7a9e', label: '人', width: 0.6, curve: 0.1 },
 }
 
 interface GNode extends SimulationNodeDatum {
@@ -70,7 +70,8 @@ export function GraphView({
     const nodes: GNode[] = fragments.map((f) => {
       const theme = emotionTheme(f.emotion)
       const maxI = Math.max(0.15, ...Object.values(f.emotion.intensities).map((v) => v ?? 0))
-      return { id: f.id, r: 4 + maxI * 9, color: theme.colors[0], color2: theme.colors[1], fragment: f }
+      const c = theme.match(/#[0-9a-f]{6}/gi) ?? ['#8c8478']
+      return { id: f.id, r: 3.5 + maxI * 8, color: c[0], color2: c[1] ?? c[0], fragment: f }
     })
     const idx = new Map(nodes.map((n) => [n.id, n]))
     const glinks: GLink[] = []
@@ -268,12 +269,7 @@ export function GraphView({
         ctx.strokeStyle = st.color
         ctx.globalAlpha = dimmed ? 0.06 : isActive ? 0.9 : 0.28 + l.weight * 0.3
         ctx.lineWidth = st.width + (isActive ? 0.7 : 0)
-        if (isActive) {
-          ctx.shadowColor = st.color
-          ctx.shadowBlur = 10
-        }
         ctx.stroke()
-        ctx.shadowBlur = 0
         ctx.globalAlpha = 1
       }
 
@@ -298,13 +294,10 @@ export function GraphView({
             const x = (1 - u) * (1 - u) * (s.x ?? 0) + 2 * (1 - u) * u * cx + u * u * (tg.x ?? 0)
             const y = (1 - u) * (1 - u) * (s.y ?? 0) + 2 * (1 - u) * u * cy + u * u * (tg.y ?? 0)
             ctx.beginPath()
-            ctx.arc(x, y, 2.4, 0, Math.PI * 2)
-            ctx.fillStyle = '#ffd48f'
-            ctx.shadowColor = '#f0b35c'
-            ctx.shadowBlur = 12
+            ctx.arc(x, y, 2.0, 0, Math.PI * 2)
+            ctx.fillStyle = '#c8442a'
             ctx.fill()
           }
-          ctx.shadowBlur = 0
         }
       }
 
@@ -313,25 +306,23 @@ export function GraphView({
         const isActive = activeSet.has(n.id)
         const isSel = sel === n.id
         const dimmed = sel ? !neighborSet.has(n.id) : false
-        const grad = ctx.createRadialGradient(n.x ?? 0, n.y ?? 0, 0, n.x ?? 0, n.y ?? 0, n.r * 1.9)
-        grad.addColorStop(0, n.color)
-        grad.addColorStop(1, 'rgba(0,0,0,0)')
-        ctx.globalAlpha = dimmed ? 0.12 : 0.5
+        ctx.globalAlpha = dimmed ? 0.18 : 1
         ctx.beginPath()
-        ctx.arc(n.x ?? 0, n.y ?? 0, n.r * 1.9, 0, Math.PI * 2)
-        ctx.fillStyle = grad
+        ctx.arc(n.x ?? 0, n.y ?? 0, n.r + (isActive || isSel ? 1.4 : 0), 0, Math.PI * 2)
+        ctx.fillStyle = n.color + 'cc'
         ctx.fill()
-
-        ctx.globalAlpha = dimmed ? 0.25 : 1
         ctx.beginPath()
-        ctx.arc(n.x ?? 0, n.y ?? 0, n.r + (isActive || isSel ? 1.6 : 0), 0, Math.PI * 2)
-        ctx.fillStyle = n.color
-        if (isActive || isSel) {
-          ctx.shadowColor = n.color
-          ctx.shadowBlur = 16
+        ctx.arc(n.x ?? 0, n.y ?? 0, n.r + (isActive || isSel ? 1.4 : 0), 0, Math.PI * 2)
+        ctx.strokeStyle = 'rgba(18,16,12,0.55)'
+        ctx.lineWidth = 0.8
+        ctx.stroke()
+        if (isSel || isActive) {
+          ctx.beginPath()
+          ctx.arc(n.x ?? 0, n.y ?? 0, n.r + (isActive ? 3.2 : 4), 0, Math.PI * 2)
+          ctx.strokeStyle = '#c8442a'
+          ctx.lineWidth = 1.2
+          ctx.stroke()
         }
-        ctx.fill()
-        ctx.shadowBlur = 0
         ctx.globalAlpha = 1
 
         if (isSel) {
@@ -350,8 +341,26 @@ export function GraphView({
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
+    const fitTimer = window.setTimeout(() => {
+      const nodes = nodesRef.current
+      if (nodes.length === 0) return
+      let minX = Infinity
+      let maxX = -Infinity
+      let minY = Infinity
+      let maxY = -Infinity
+      for (const n of nodes) {
+        minX = Math.min(minX, (n.x ?? 0) - n.r)
+        maxX = Math.max(maxX, (n.x ?? 0) + n.r)
+        minY = Math.min(minY, (n.y ?? 0) - n.r)
+        maxY = Math.max(maxY, (n.y ?? 0) + n.r)
+      }
+      const { w, h } = sizeRef.current
+      const k = Math.min(2.6, Math.max(0.3, Math.min(w / (maxX - minX + 90), h / (maxY - minY + 90)) || 1))
+      trRef.current = zoomIdentity.translate(-((minX + maxX) / 2) * k, -((minY + maxY) / 2) * k).scale(k)
+    }, 1600)
 
     return () => {
+      window.clearTimeout(fitTimer)
       cancelAnimationFrame(raf)
       ro.disconnect()
       simRef.current?.stop()
@@ -383,39 +392,36 @@ export function GraphView({
     <div className="space-y-3">
       <div className="flex items-end justify-between">
         <div>
-          <p className="mono text-faint">CIRCUIT — 記憶回路</p>
-          <h2 className="mt-1 font-serif text-[19px] text-bone">
+          <p className="text-[11.5px] text-faint">回路</p>
+          <h2 className="mt-1 font-serif text-[20px] text-bone">
             {fragments.length}の断片が、{graph.glinks.length}の回路で繋がっている
           </h2>
           {fragments.length < allCount && (
             <p className="mt-0.5 text-[11px] text-amber/80">フィルタ適用中（全{allCount}断片）</p>
           )}
         </div>
-        <button onClick={zoomToFit} className="rounded-full border border-hairline px-3 py-1 text-[11px] text-faint transition hover:text-bone">
+        <button onClick={zoomToFit} className="text-[11.5px] text-muted underline-offset-4 transition hover:text-bone hover:underline">
           全体を表示
         </button>
       </div>
 
-      <div ref={wrapRef} className="relative h-[520px] overflow-hidden rounded-2xl border border-hairline bg-[#080b11] lg:h-[600px]">
+      <div ref={wrapRef} className="relative h-[520px] overflow-hidden border border-rule bg-ink lg:h-[600px]">
         <canvas ref={canvasRef} className="h-full w-full touch-none" />
         {activePath.length >= 2 && (
-          <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 rounded-full border border-amber/30 bg-black/40 px-3 py-1 backdrop-blur">
-            <span className="h-1.5 w-1.5 rounded-full bg-amber pulse-glow" />
-            <span className="mono text-amber-soft">想起の回路を発火中</span>
-          </div>
+          <p className="pointer-events-none absolute left-4 top-3 text-[11.5px] text-shu">想起の回路を発火中</p>
         )}
         {hovered && hoveredFragment && (
           <div
-            className="pointer-events-none absolute z-10 max-w-[240px] rounded-lg border border-hairline bg-ink-2/95 px-3 py-2 shadow-2xl backdrop-blur"
+            className="pointer-events-none absolute z-10 max-w-[250px] border border-rule bg-ink-2 px-3 py-2"
             style={{ left: Math.min(hovered.x + 14, sizeRef.current.w - 250), top: Math.max(hovered.y - 10, 8) }}
           >
             <p className="mono text-faint">{formatJP(hoveredFragment.createdAt)}</p>
-            <p className="mt-1 text-[12px] leading-snug text-bone">{hoveredFragment.text.slice(0, 64)}</p>
+            <p className="mt-1 font-serif text-[12.5px] leading-snug text-bone">{hoveredFragment.text.slice(0, 64)}</p>
             <p className="mt-1 text-[10px] text-faint">クリックで詳細</p>
           </div>
         )}
         <div className="pointer-events-none absolute bottom-3 right-3 text-[10.5px] text-faint">
-          ドラッグで移動・ノードをドラッグ・ホイールで拡大
+          ドラッグ・拡大・ノード移動
         </div>
       </div>
 
@@ -435,16 +441,13 @@ export function GraphView({
       </div>
 
       {selectedFragment && (
-        <div className="rise panel rounded-xl p-4">
+        <div className="rise border border-rule px-4 py-3">
           <div className="flex items-center justify-between">
             <p className="mono text-faint">{formatJP(selectedFragment.createdAt)}</p>
             <p className="text-[11px] text-muted">{dominantFragmentLabel(selectedFragment)}</p>
           </div>
           <p className="mt-2 font-serif text-[14.5px] leading-relaxed text-bone">{selectedFragment.text}</p>
-          <button
-            onClick={() => onOpenFragment(selectedFragment.id)}
-            className="mt-3 rounded-lg border border-amber/40 px-3 py-1.5 text-[12px] text-amber transition hover:bg-amber/10"
-          >
+          <button onClick={() => onOpenFragment(selectedFragment.id)} className="mt-3 text-[12.5px] text-shu underline-offset-4 transition hover:underline">
             つながりをひらく
           </button>
         </div>

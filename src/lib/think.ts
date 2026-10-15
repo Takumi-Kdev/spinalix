@@ -2,12 +2,13 @@
 // 拡散活性化 → 記憶グラフの歩行（ビーム探索）→ 言語化 → 特別な思考（開いた輪・問い）
 // すべて決定論的。APIはここでは使わない（使う場合も「文体化」だけを API に委ねる）。
 
-import type { Fragment, Link, Preferences, SuddenThought, ThoughtKind } from './types'
+import type { Fragment, Link, Preferences, SuddenThought, ThinkTrace, ThoughtKind } from './types'
 import { activate, primingSeeds } from './activation'
 import { analyzeMemory } from './analysis'
-import { findWalks, type WalkMode } from './walk'
+import { findWalks, walkSpanDays, type WalkMode } from './walk'
 import { renderOpenLoop, renderQuestion, renderWalk, type ThoughtDraft } from './render'
 import { pairKey } from './text'
+import { formatJP } from './dates'
 
 const MODE_ORDER: WalkMode[] = ['resonance', 'contrast', 'dwell', 'arc', 'leap']
 
@@ -23,6 +24,17 @@ function kindBias(prefs: Preferences, kind: ThoughtKind): number {
 }
 
 export function think(fragments: Fragment[], links: Link[], prevThoughts: SuddenThought[], prefs: Preferences, opts: ThinkOptions = {}): ThoughtDraft | null {
+  return thinkWithTrace(fragments, links, prevThoughts, prefs, opts)?.draft ?? null
+}
+
+/** 思考と、その全記録（解剖）を返す */
+export function thinkWithTrace(
+  fragments: Fragment[],
+  links: Link[],
+  prevThoughts: SuddenThought[],
+  prefs: Preferences,
+  opts: ThinkOptions = {},
+): { draft: ThoughtDraft; trace: ThinkTrace } | null {
   const now = opts.now ?? new Date()
   const cycle = opts.cycleIndex ?? prevThoughts.length
   const activation = activate(fragments, links, now)
@@ -35,7 +47,6 @@ export function think(fragments: Fragment[], links: Link[], prevThoughts: Sudden
       .filter((t) => t.path && t.path.length >= 2)
       .map((t) => `${t.path[0]}>${t.path[t.path.length - 1]}`),
   )
-  // 直近の想起で使った記憶・ペアは冷ます（同じ記憶ばかり見ないため）
   const recentUsage = new Map<string, number>()
   for (const t of prevThoughts.slice(-5)) {
     for (const id of t.path ?? []) recentUsage.set(id, (recentUsage.get(id) ?? 0) + 1)
@@ -46,13 +57,15 @@ export function think(fragments: Fragment[], links: Link[], prevThoughts: Sudden
     for (let i = 0; i < p.length; i++) {
       for (let j = i + 1; j < p.length; j++) usedPairs.add(pairKey(p[i], p[j]))
     }
-    // 出典の組（from）も再利用しない
     const f = t.from ?? []
     for (let i = 0; i < f.length; i++) {
       for (let j = i + 1; j < f.length; j++) usedPairs.add(pairKey(f[i], f[j]))
     }
   }
 
+  const byId = new Map(fragments.map((f) => [f.id, f]))
+  const draftMeta = new Map<ThoughtDraft, { mode: string; walkScore: number; path: string[] }>()
+  const walkLog: ThinkTrace['walks'] = []
   const drafts: ThoughtDraft[] = []
   const preferred = MODE_ORDER[((cycle % MODE_ORDER.length) + MODE_ORDER.length) % MODE_ORDER.length]
   const order = [preferred, ...MODE_ORDER.filter((m) => m !== preferred)]
@@ -60,28 +73,27 @@ export function think(fragments: Fragment[], links: Link[], prevThoughts: Sudden
     const walks = findWalks(fragments, links, activation, seeds, mode, { excludeFingerprints: usedFingerprints, excludePairs: usedPairs })
     let added = 0
     for (const w of walks) {
+      walkLog.push({ mode, score: Number(w.score.toFixed(3)), path: w.path, chosen: false })
       const ends = `${w.path[0]}>${w.path[w.path.length - 1]}`
       if (usedEnds.has(ends)) continue
-      drafts.push(renderWalk(w, fragments))
+      if (added >= 2) continue
+      const d = renderWalk(w, fragments)
+      drafts.push(d)
+      draftMeta.set(d, { mode, walkScore: w.score, path: w.path })
       added++
-      if (added >= 2) break
     }
     if (drafts.length >= 4) break
   }
 
-  // 特別な思考: 開いた輪（言ったのに、やっていない）
   const analysis = analyzeMemory(fragments, now)
   const openloop = analysis.openLoops
     .filter((l) => !usedFingerprints.has(`openloop|${l.theme}`))
     .map((l) => renderOpenLoop(l, fragments))[0]
   if (openloop) drafts.push(openloop)
-
-  // 問い（まだ答えていない）は4サイクルに1回だけ混ぜる
   if (cycle > 0 && cycle % 4 === 3) {
     const q = analysis.questions.find((x) => !usedFingerprints.has(`question|${x.fragmentId}`))
     if (q) drafts.push(renderQuestion(q, fragments))
   }
-
   if (drafts.length === 0) return null
 
   const adjusted = drafts.map((d) => {
@@ -100,7 +112,37 @@ export function think(fragments: Fragment[], links: Link[], prevThoughts: Sudden
     return { d, s }
   })
   adjusted.sort((x, y) => y.s - x.s || x.d.fingerprint.localeCompare(y.d.fingerprint))
-  return adjusted[0].d
+  const winner = adjusted[0]
+
+  const trace: ThinkTrace = {
+    cycle,
+    preferredMode: preferred,
+    seeds: seeds.map((s) => ({
+      id: s.id,
+      date: formatJP(byId.get(s.id)?.createdAt ?? now.toISOString()),
+      reason: s.reason,
+      activation: Number((activation.get(s.id) ?? 0).toFixed(3)),
+    })),
+    walks: walkLog.slice(0, 12).map((w) => ({
+      ...w,
+      chosen: w.path.join('>') === winner.d.path.join('>') && (draftMeta.get(winner.d)?.mode ?? '') === w.mode,
+    })),
+    drafts: adjusted.map(({ d, s }) => ({
+      kind: d.kind,
+      mode: (draftMeta.get(d)?.mode ?? String(d.mode)) as string,
+      score: Number(d.score.toFixed(3)),
+      adjusted: Number(s.toFixed(3)),
+      chosen: d === winner.d,
+    })),
+    note:
+      winner.d.kind === 'openloop'
+        ? '開いた輪（意志語に対して行動語が少ないテーマ）から生成'
+        : winner.d.kind === 'question'
+          ? '問いの形のまま残った断片から生成'
+          : `モード「${draftMeta.get(winner.d)?.mode ?? ''}」の歩行から生成（${walkSpanDays({ mode: 'arc', path: winner.d.path, hops: [], score: 0, fingerprint: '' }, fragments)}日の道筋）`,
+  }
+
+  return { draft: winner.d, trace }
 }
 
 function hash(s: string): string {
@@ -112,7 +154,7 @@ function hash(s: string): string {
   return (h >>> 0).toString(36)
 }
 
-export function toThought(draft: ThoughtDraft, now: Date = new Date()): SuddenThought {
+export function toThought(draft: ThoughtDraft, now: Date = new Date(), trace?: ThinkTrace): SuddenThought {
   return {
     id: `st-${hash(draft.fingerprint)}-${Math.floor(now.getTime() / 1000)}`,
     createdAt: now.toISOString(),
@@ -125,6 +167,7 @@ export function toThought(draft: ThoughtDraft, now: Date = new Date()): SuddenTh
     score: draft.score,
     fingerprint: draft.fingerprint,
     status: 'new',
+    trace,
   }
 }
 
@@ -135,7 +178,7 @@ export function generateSuddenThought(
   prefs: Preferences,
   now: Date = new Date(),
 ): SuddenThought | null {
-  const draft = think(fragments, links, prevThoughts, prefs, { now })
-  if (!draft) return null
-  return toThought(draft, now)
+  const result = thinkWithTrace(fragments, links, prevThoughts, prefs, { now })
+  if (!result) return null
+  return toThought(result.draft, now, result.trace)
 }

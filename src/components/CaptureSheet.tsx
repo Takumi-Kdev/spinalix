@@ -42,86 +42,86 @@ export function CaptureSheet({ open, onClose }: { open: boolean; onClose: () => 
     }
     addFragment(text, manual)
     setSaved(true)
-    window.setTimeout(onClose, 720)
+    window.setTimeout(onClose, 700)
   }
 
   return (
     <div className="fixed inset-0 z-40">
-      <button aria-label="閉じる" className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="absolute inset-x-0 bottom-0 mx-auto max-w-lg rounded-t-3xl border border-hairline bg-ink-2 px-5 pb-8 pt-4 shadow-[0_-20px_60px_-20px_rgba(0,0,0,0.9)]">
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/15" />
-
+      <button aria-label="閉じる" className="absolute inset-0 bg-black/70" onClick={onClose} />
+      <div className="absolute inset-x-0 bottom-0 mx-auto max-w-lg border-t border-rule bg-ink-2 px-5 pb-8 pt-5">
         {saved ? (
           <div className="py-10 text-center">
-            <p className="text-amber-soft">記憶しました。</p>
-            <p className="mt-1 text-[12px] text-faint">回路が、静かに組み替えられています。</p>
+            <p className="font-serif text-[15px] text-bone">記憶しました。</p>
+            <p className="mt-1 text-[11.5px] text-faint">回路が、静かに組み替えられています。</p>
           </div>
         ) : (
           <>
-            <p className="text-[11px] tracking-[0.28em] text-faint">CAPTURE — 5秒で残す</p>
-            <textarea
-              ref={areaRef}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              rows={3}
-              placeholder="今の気持ちを、ひとことで。"
-              className="mt-3 w-full resize-none rounded-2xl border border-hairline bg-white/[0.03] px-4 py-3 text-[15px] leading-relaxed text-bone outline-none placeholder:text-faint focus:border-amber/50"
-            />
-            <div className="mt-2 flex flex-wrap gap-2">
-              {EXAMPLES.map((ex) => (
-                <button
-                  key={ex}
-                  onClick={() => setText(ex)}
-                  className="rounded-full border border-hairline px-3 py-1 text-[11px] text-faint transition hover:border-white/20 hover:text-muted"
-                >
-                  {ex.slice(0, 14)}…
-                </button>
-              ))}
+            <div className="flex items-baseline justify-between">
+              <p className="text-[12px] text-muted">記憶する</p>
+              <p className="text-[11px] text-faint">5秒で残す。整理は要りません。</p>
             </div>
 
-            <p className="mt-5 text-[11px] tracking-[0.28em] text-faint">いまの感情（なくてもいい）</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {EMOTION_KEYS.map((k) => {
-                const m = EMOTION_META[k]
-                const active = emotion === k
-                return (
-                  <button
-                    key={k}
-                    onClick={() => setEmotion(active ? null : k)}
-                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] transition ${
-                      active ? 'border-transparent text-ink' : 'border-hairline text-muted hover:text-bone'
-                    }`}
-                    style={active ? { background: m.color } : undefined}
-                  >
-                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: active ? 'rgba(0,0,0,0.5)' : m.color }} />
-                    {m.label}
+            {/* 便箋に書く */}
+            <div className="letter mt-3 px-4 pb-3 pt-3">
+              <textarea
+                ref={areaRef}
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                rows={3}
+                placeholder="今の気持ちを、ひとことで。"
+                className="w-full resize-none bg-transparent font-serif text-[15.5px] leading-[1.95] text-sumi outline-none placeholder:text-[#a49a86]"
+              />
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 border-t pt-2 letter-rule">
+                {EXAMPLES.map((ex) => (
+                  <button key={ex} onClick={() => setText(ex)} className="text-left text-[11px] text-[#6f6656] underline-offset-4 transition hover:underline">
+                    {ex.slice(0, 16)}…
                   </button>
-                )
-              })}
+                ))}
+              </div>
             </div>
 
-            {emotion && (
-              <div className="mt-3 flex items-center gap-3">
-                <span className="text-[11px] text-faint">強さ</span>
+            <div className="mt-4">
+              <p className="text-[11px] text-faint">いまの感情（なくてもいい）</p>
+              <div className="mt-2 grid grid-cols-4 gap-x-4 gap-y-1.5">
+                {EMOTION_KEYS.map((k) => {
+                  const active = emotion === k
+                  return (
+                    <button
+                      key={k}
+                      onClick={() => setEmotion(active ? null : k)}
+                      className={`flex items-center gap-2 py-0.5 text-left text-[12px] transition ${active ? 'text-bone' : 'text-muted hover:text-bone'}`}
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full" style={{ background: EMOTION_META[k].color }} />
+                      {EMOTION_META[k].label}
+                      {active && <span className="tnum ml-auto text-[10px] text-shu">{intensity}</span>}
+                    </button>
+                  )
+                })}
+              </div>
+              {emotion && (
                 <input
                   type="range"
                   min={1}
                   max={5}
                   value={intensity}
                   onChange={(e) => setIntensity(Number(e.target.value))}
-                  className="h-1 flex-1 appearance-none rounded-full bg-white/15 accent-[#f0b35c]"
+                  className="mt-2 h-[2px] w-full appearance-none bg-rule"
                 />
-                <span className="tabular text-[12px] text-amber">{intensity}</span>
-              </div>
-            )}
+              )}
+            </div>
 
-            <button
-              onClick={save}
-              disabled={!text.trim()}
-              className="mt-6 w-full rounded-xl bg-gradient-to-b from-amber-soft to-amber px-4 py-3 text-[14px] font-bold text-[#241a08] transition active:scale-[0.99] disabled:opacity-40"
-            >
-              記憶する
-            </button>
+            <div className="mt-5 flex items-center gap-5">
+              <button
+                onClick={save}
+                disabled={!text.trim()}
+                className="rounded-[6px] bg-shu px-5 py-2.5 text-[13.5px] font-bold text-paper transition active:translate-y-px disabled:opacity-40"
+              >
+                記憶する
+              </button>
+              <button onClick={onClose} className="text-[12.5px] text-muted underline-offset-4 transition hover:text-bone hover:underline">
+                やめる
+              </button>
+            </div>
           </>
         )}
       </div>

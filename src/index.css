@@ -1,22 +1,26 @@
 @import 'tailwindcss';
 
+/* DESIGN.md のトークンのみを使う。新しい色・角丸をここ以外で作らない。 */
+
 @theme {
-  --color-ink: #07090f;
-  --color-ink-2: #0c1018;
-  --color-panel: #10141f;
-  --color-panel-2: #141a28;
-  --color-hairline: rgba(255, 255, 255, 0.07);
-  --color-bone: #ece7dc;
-  --color-muted: #939cad;
-  --color-faint: #5d6678;
-  --color-amber: #f0b35c;
-  --color-amber-soft: #ffd48f;
-  --color-teal: #7fd1ae;
-  --color-coral: #f07b6a;
-  --color-sky: #8fb8e8;
+  --color-ink: #12100c;
+  --color-ink-2: #17140f;
+  --color-paper: #f1e9d8;
+  --color-paper-2: #e7dcc6;
+  --color-sumi: #241f18;
+  --color-bone: #e7dfcf;
+  --color-muted: #9a9182;
+  --color-faint: #6a6357;
+  --color-rule: rgba(231, 223, 207, 0.12);
+  --color-shu: #c8442a;
+  --color-shu-soft: #e06a4a;
+  --color-aiiro: #5b7a9e;
   --font-sans: 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', system-ui, sans-serif;
   --font-serif: 'Shippori Mincho', 'Hiragino Mincho ProN', serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+  --radius-sm: 4px;
+  --radius-card: 10px;
+  --radius-letter: 16px;
 }
 
 html,
@@ -29,113 +33,82 @@ body {
   background: var(--color-ink);
   color: var(--color-bone);
   font-family: var(--font-sans);
+  font-size: 14.5px;
+  line-height: 1.75;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior-y: none;
 }
 
 ::selection {
-  background: rgba(240, 179, 92, 0.3);
+  background: rgba(200, 68, 42, 0.28);
 }
 
-/* ── 幾何学グリッド（Obsidianのような構造の感触）────────── */
-.grid-bg::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.021) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.021) 1px, transparent 1px);
-  background-size: 28px 28px;
-  mask-image: radial-gradient(1200px 800px at 50% 0%, black 30%, transparent 85%);
-}
+/* ── 面 ─────────────────────────────────────── */
 
-.vignette::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(1000px 600px at 85% -10%, rgba(240, 179, 92, 0.055), transparent 65%),
-    radial-gradient(900px 700px at 0% 110%, rgba(143, 184, 232, 0.05), transparent 60%);
-}
-
-/* ── パネル ───────────────────────────────── */
-.panel {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0) 40%),
-    var(--color-panel);
-  border: 1px solid var(--color-hairline);
-}
-
-.panel-flat {
+.sheet {
   background: var(--color-ink-2);
-  border: 1px solid var(--color-hairline);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-card);
 }
 
-.hairline-t {
-  border-top: 1px solid var(--color-hairline);
+.rule-t {
+  border-top: 1px solid var(--color-rule);
 }
 
-.hairline-b {
-  border-bottom: 1px solid var(--color-hairline);
+.rule-b {
+  border-bottom: 1px solid var(--color-rule);
 }
 
-/* ── 想起カード（感情グラデーションの縁）──────────── */
-.thought-card {
-  position: relative;
-  border-radius: 18px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0)) padding-box,
-    var(--color-panel) padding-box;
-  border: 1px solid transparent;
-  box-shadow: 0 30px 70px -40px rgba(0, 0, 0, 0.95);
+/* ── 便箋（記憶カード） ───────────────────────── */
+
+.letter {
+  background: linear-gradient(180deg, var(--color-paper) 0%, var(--color-paper-2) 100%);
+  color: var(--color-sumi);
+  border-radius: var(--radius-letter);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.45) inset,
+    0 12px 28px -22px rgba(0, 0, 0, 0.85);
 }
 
-.thought-card::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: 19px;
-  padding: 1px;
-  background: var(--edge, linear-gradient(135deg, rgba(240, 179, 92, 0.6), rgba(240, 179, 92, 0.05) 55%, rgba(143, 184, 232, 0.3)));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
+.letter-rule {
+  border-color: rgba(36, 31, 24, 0.14);
 }
 
-/* ── 断片カード（紙）────────────────────────── */
-.paper {
-  background: linear-gradient(178deg, #f2ecdf 0%, #e9e2d2 100%);
-  color: #1b1e26;
+/* ── 印（朱印） ─────────────────────────────── */
+
+.seal {
+  display: inline-grid;
+  place-items: center;
+  border: 1.5px solid var(--color-shu);
+  color: var(--color-shu);
+  border-radius: 6px;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  line-height: 1;
+  padding: 3px 4px;
+  letter-spacing: 0;
+  background: rgba(200, 68, 42, 0.04);
 }
 
-.paper-2 {
-  background: linear-gradient(178deg, #1a1f2c 0%, #151a26 100%);
+/* ── 数字・脚注 ─────────────────────────────── */
+
+.tnum {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
-/* ── マイクロラベル（mono）─────────────────── */
 .mono {
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
 }
 
-/* ── グラデーションバー（感情）──────────────── */
-.emobar {
-  border-radius: 999px;
-  background: var(--grad, linear-gradient(90deg, #f0b35c, #f27ba7));
-}
+/* ── 動き（意味のあるものだけ） ───────────────── */
 
-/* ── アニメーション ─────────────────────────── */
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
@@ -143,34 +116,7 @@ body {
   }
 }
 .rise {
-  animation: rise 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes fadein {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-.fadein {
-  animation: fadein 0.5s ease both;
-}
-
-@keyframes pulseGlow {
-  0%,
-  100% {
-    opacity: 0.5;
-    transform: scale(0.96);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.02);
-  }
-}
-.pulse-glow {
-  animation: pulseGlow 2.4s ease-in-out infinite;
+  animation: rise 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes orbit {
@@ -182,38 +128,38 @@ body {
   }
 }
 .thinking-orbit {
-  animation: orbit 1.6s linear infinite;
+  animation: orbit 1.8s linear infinite;
 }
 
-@keyframes dash {
+@keyframes fire {
   to {
-    stroke-dashoffset: -24;
+    stroke-dashoffset: -18;
   }
 }
 .fire-dash {
-  stroke-dasharray: 6 6;
-  animation: dash 1.2s linear infinite;
-}
-
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+  stroke-dasharray: 4 8;
+  animation: fire 1.4s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .rise,
-  .fadein,
-  .pulse-glow,
   .thinking-orbit,
   .fire-dash {
     animation: none;
   }
 }
 
-.tabular {
-  font-variant-numeric: tabular-nums;
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(231, 223, 207, 0.14) transparent;
 }
 
 input[type='range'] {
-  accent-color: #f0b35c;
+  accent-color: #c8442a;
+}
+
+/* リンク・ボタンのフォーカス（可視にする） */
+:focus-visible {
+  outline: 1.5px solid var(--color-shu-soft);
+  outline-offset: 2px;
 }

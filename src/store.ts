@@ -4,7 +4,7 @@ import type { EmotionVector, Fragment, Link, Preferences, SuddenThought, Thought
 import { PERSONA_FRAGMENTS, USER_FRAGMENTS, type SeedFragment } from './lib/persona'
 import { analyzeEmotion, blendEmotion } from './lib/emotion'
 import { adoptThought, assembleCrystal, buildLinks } from './lib/engine'
-import { think, toThought } from './lib/think'
+import { thinkWithTrace, toThought } from './lib/think'
 import { stylizeWithApi, type ApiConfig } from './lib/apiBrain'
 
 const STORAGE_KEY = 'spinalix-v2'
@@ -127,17 +127,23 @@ export const useSpinalix = create<SpinalixState>((set, get) => {
   /** 決定論的エンジンで下書きを作り、必要ならAPIで「文体化」する（検証つき） */
   const generateNext = async (): Promise<SuddenThought | null> => {
     const { fragments, links, thoughts, prefs, api } = get()
-    const draft = think(fragments, links, thoughts, prefs, { now: new Date(), cycleIndex: thoughts.length })
-    if (!draft) return null
+    const result = thinkWithTrace(fragments, links, thoughts, prefs, { now: new Date(), cycleIndex: thoughts.length })
+    if (!result) return null
+    const { draft, trace } = result
     let engine: SuddenThought['engine'] = 'local'
+    let verifyNote: string | undefined
     if (api.enabled && api.apiKey.trim()) {
       const outcome = await stylizeWithApi(draft, fragments, { provider: api.provider, model: api.model, apiKey: api.apiKey })
       if (outcome.ok && outcome.text) {
         draft.text = outcome.text
         engine = 'ai'
+        verifyNote = `AI文体・検証済（${outcome.attempts}回目で通過）`
+      } else {
+        verifyNote = `AI文体は破棄（${outcome.error ?? '検証失敗'}）。ローカルの文を使用`
       }
     }
-    const thought = toThought(draft, new Date())
+    if (verifyNote) trace.note = `${trace.note ?? ''}${trace.note ? '。' : ''}${verifyNote}`
+    const thought = toThought(draft, new Date(), trace)
     thought.engine = engine
     const next = [...get().thoughts, thought]
     set({ thoughts: next })
@@ -234,9 +240,9 @@ export const useSpinalix = create<SpinalixState>((set, get) => {
       for (let i = thoughts.length - 1; i >= 0; i--) {
         if (thoughts[i].status === 'new') return thoughts[i]
       }
-      const draft = think(fragments, links, thoughts, prefs, { now: new Date(), cycleIndex: thoughts.length })
-      if (!draft) return null
-      const thought = toThought(draft, new Date())
+      const result = thinkWithTrace(fragments, links, thoughts, prefs, { now: new Date(), cycleIndex: thoughts.length })
+      if (!result) return null
+      const thought = toThought(result.draft, new Date(), result.trace)
       const next = [...thoughts, thought]
       set({ thoughts: next })
       commit()

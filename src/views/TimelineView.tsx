@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import type { Fragment } from '../lib/types'
 import { formatJP, monthKey, monthLabel } from '../lib/dates'
 import { dominantEmotion, EMOTION_META } from '../lib/emotion'
-import { emotionTheme, hexA } from '../lib/design'
+import { emotionColor } from '../lib/design'
 
 /** 流れ — 8ヶ月の記憶を、時間の川として見る */
 export function TimelineView({ fragments, onOpenFragment }: { fragments: Fragment[]; onOpenFragment: (id: string) => void }) {
@@ -17,14 +17,12 @@ export function TimelineView({ fragments, onOpenFragment }: { fragments: Fragmen
     const W = 1000
     const x = (iso: string) => 40 + ((new Date(iso).getTime() - minT) / span) * (W - 80)
     const bars = sorted.map((f) => {
-      const theme = emotionTheme(f.emotion)
       const maxI = Math.max(0.2, ...Object.values(f.emotion.intensities).map((v) => v ?? 0))
       return {
         f,
         x: x(f.createdAt),
         h: 30 + maxI * 120,
-        color: theme.colors[0],
-        color2: theme.colors[1],
+        color: emotionColor(f),
         arousal: f.emotion.arousal,
       }
     })
@@ -55,21 +53,13 @@ export function TimelineView({ fragments, onOpenFragment }: { fragments: Fragmen
   return (
     <div className="space-y-3">
       <div>
-        <p className="mono text-faint">FLOW — 記憶の流れ</p>
-        <h2 className="mt-1 font-serif text-[19px] text-bone">8ヶ月の感情の川</h2>
+        <p className="text-[11.5px] text-faint">流れ</p>
+        <h2 className="mt-1 font-serif text-[20px] text-bone">8ヶ月の感情の川</h2>
         <p className="mt-1 text-[11.5px] text-muted">棒＝断片（高さ＝感情の強さ／色＝感情）。線＝月ごとの快-不快の平均。</p>
       </div>
 
-      <div className="panel relative overflow-hidden rounded-2xl p-3">
+      <div className="relative overflow-hidden border border-rule p-3">
         <svg viewBox="0 0 1000 260" className="w-full" style={{ height: 'min(46vh, 300px)' }}>
-          <defs>
-            {bars.slice(0, 120).map((b, i) => (
-              <linearGradient key={i} id={`bar-${i}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={b.color} stopOpacity="0.95" />
-                <stop offset="100%" stopColor={b.color2} stopOpacity="0.15" />
-              </linearGradient>
-            ))}
-          </defs>
           {/* 月グリッド */}
           {months.map((m) => (
             <g key={m.key}>
@@ -82,7 +72,7 @@ export function TimelineView({ fragments, onOpenFragment }: { fragments: Fragmen
           <line x1={30} y1={120} x2={970} y2={120} stroke="rgba(255,255,255,0.08)" strokeDasharray="3 6" />
 
           {/* 断片のバー */}
-          {bars.map((b, i) => (
+          {bars.map((b) => (
             <g
               key={b.f.id}
               onMouseEnter={() => setHoverId(b.f.id)}
@@ -95,10 +85,10 @@ export function TimelineView({ fragments, onOpenFragment }: { fragments: Fragmen
                 y1={210}
                 x2={b.x}
                 y2={210 - b.h}
-                stroke={`url(#bar-${i})`}
-                strokeWidth={hoverId === b.f.id ? 5 : b.arousal > 0.6 ? 3 : 2}
+                stroke={b.color}
+                strokeWidth={hoverId === b.f.id ? 4 : b.arousal > 0.6 ? 2.6 : 1.8}
                 strokeLinecap="round"
-                opacity={hoverId && hoverId !== b.f.id ? 0.35 : 1}
+                opacity={hoverId && hoverId !== b.f.id ? 0.3 : 0.9}
               />
               <circle cx={b.x} cy={210 - b.h} r={hoverId === b.f.id ? 3.4 : 1.7} fill={b.color} opacity={hoverId && hoverId !== b.f.id ? 0.35 : 0.95} />
               <rect x={b.x - 5} y={0} width={10} height={250} fill="transparent" />
@@ -106,7 +96,7 @@ export function TimelineView({ fragments, onOpenFragment }: { fragments: Fragmen
           ))}
 
           {/* 感情の線 */}
-          <path d={valencePath} fill="none" stroke="#f0b35c" strokeWidth="1.8" strokeLinecap="round" opacity="0.9" />
+          <path d={valencePath} fill="none" stroke="#c8442a" strokeWidth="1.6" strokeLinecap="round" opacity="0.85" />
         </svg>
 
         {hovered && (
@@ -135,7 +125,7 @@ export function TimelineView({ fragments, onOpenFragment }: { fragments: Fragmen
           </span>
         ))}
         <span className="ml-auto flex items-center gap-1.5 text-[11px] text-faint">
-          <span className="inline-block h-[2px] w-4 rounded" style={{ background: hexA('#f0b35c', 0.9) }} />
+          <span className="inline-block h-[2px] w-4" style={{ background: '#c8442a' }} />
           快-不快の平均
         </span>
       </div>

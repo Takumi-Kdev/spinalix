@@ -27,46 +27,36 @@ export function StreamView({
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="mono text-faint">THINK — 思考の記録</p>
-          <h2 className="mt-1 font-serif text-[19px] text-bone">この脳は、あなた不在でも考えている</h2>
+          <p className="text-[11.5px] text-faint">思考</p>
+          <h2 className="mt-1 font-serif text-[20px] text-bone">この脳は、あなた不在でも考えている</h2>
           <p className="mt-1 text-[11.5px] text-muted">
             未処理 {pending.length} 件・定着 {adopted} 件・
             {api.enabled && api.apiKey ? 'AI文体モード' : 'ローカル思考モード'}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={onToggleAutonomous}
-            className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] transition ${
-              autonomous ? 'border-amber/50 bg-amber/10 text-amber' : 'border-hairline text-muted hover:text-bone'
-            }`}
-          >
-            <span className={`h-1.5 w-1.5 rounded-full ${autonomous ? 'bg-amber pulse-glow' : 'bg-white/25'}`} />
+          <button onClick={onToggleAutonomous} className={`text-[12.5px] underline-offset-4 transition hover:underline ${autonomous ? 'text-shu' : 'text-muted'}`}>
             自立思考 {autonomous ? 'オン' : 'オフ'}
           </button>
-          <button
-            onClick={() => void deepThink(5)}
-            disabled={thinking}
-            className="rounded-full border border-amber/40 px-3 py-1.5 text-[12px] text-amber transition hover:bg-amber/10 disabled:opacity-40"
-          >
+          <button onClick={() => void deepThink(5)} disabled={thinking} className="text-[12.5px] text-shu underline-offset-4 transition hover:underline disabled:opacity-40">
             {thinking ? '考えている…' : '深く考える（5）'}
           </button>
         </div>
       </div>
 
       {thinking && (
-        <div className="panel flex items-center gap-3 rounded-xl px-4 py-3">
-          <svg width="16" height="16" viewBox="0 0 24 24" className="thinking-orbit text-amber">
+        <div className="flex items-center gap-3 border-y border-rule px-1 py-3">
+          <svg width="15" height="15" viewBox="0 0 24 24" className="thinking-orbit text-shu">
             <circle cx="12" cy="6" r="2" fill="currentColor" />
             <circle cx="18" cy="12" r="1.4" fill="currentColor" opacity="0.6" />
             <circle cx="6" cy="12" r="1.4" fill="currentColor" opacity="0.6" />
           </svg>
-          <p className="text-[12.5px] text-muted">記憶の回路を歩いています——活性化 → 拡散 → 跳躍 → 検証</p>
+          <p className="text-[12.5px] text-muted">記憶の回路を歩いています。活性化 → 拡散 → 跳躍 → 検証</p>
         </div>
       )}
 
       {stream.length === 0 && (
-        <div className="panel rounded-xl px-5 py-10 text-center">
+        <div className="border border-rule px-5 py-10 text-center">
           <p className="text-[13px] text-muted">まだ思考がありません。</p>
           <p className="mt-1 text-[11.5px] text-faint">「深く考える」を押すか、自立思考モードをオンにしてください。</p>
         </div>

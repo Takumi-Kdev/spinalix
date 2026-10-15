@@ -15,9 +15,9 @@
 - [ ] `submission/DEVPOST.md`（v2）の各欄をコピペ
 - [ ] 動画URLを貼る
 - [ ] **Macアプリ**: https://github.com/Takumi-Kdev/spinalix/releases/latest
-- [ ] ライブデモ: https://takumi-kdev.github.io/spinalix/
+- [ ] プロダクトページ: https://takumi-kdev.github.io/spinalix/ （デモは「デモを開く」から）
 - [ ] GitHub: https://github.com/Takumi-Kdev/spinalix
-- [ ] 画像: `submission/gallery/` の7枚をアップロード
+- [ ] 画像: `submission/gallery/` の9枚（00-landing〜08-settings）をアップロード
 - [ ] Built With: TypeScript / React / Vite / Tailwind CSS / d3-force / d3-zoom / zustand / Electron / Node.js
 - [ ] **提出ボタンを押す**（スクリーンショットを撮っておく）
 

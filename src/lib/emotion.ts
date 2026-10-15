@@ -13,14 +13,14 @@ export const EMOTION_KEYS: EmotionKey[] = [
 ]
 
 export const EMOTION_META: Record<EmotionKey, { label: string; color: string; valence: number; arousal: number }> = {
-  joy: { label: '喜び', color: '#ffd166', valence: 0.8, arousal: 0.7 },
-  love: { label: '愛おしさ', color: '#f27ba7', valence: 0.75, arousal: 0.55 },
-  anticipation: { label: '期待', color: '#7fd1ae', valence: 0.45, arousal: 0.6 },
-  calm: { label: '静けさ', color: '#8fb8e8', valence: 0.3, arousal: 0.15 },
-  sadness: { label: '悲しみ', color: '#6e86c9', valence: -0.6, arousal: 0.3 },
-  anxiety: { label: '不安', color: '#c7a0f0', valence: -0.5, arousal: 0.75 },
-  anger: { label: '怒り', color: '#f07b6a', valence: -0.6, arousal: 0.85 },
-  fatigue: { label: '疲れ', color: '#9aa3b2', valence: -0.35, arousal: 0.2 },
+  joy: { label: '喜び', color: '#d9a441', valence: 0.8, arousal: 0.7 },
+  love: { label: '愛おしさ', color: '#c9738c', valence: 0.75, arousal: 0.55 },
+  anticipation: { label: '期待', color: '#7d9a6f', valence: 0.45, arousal: 0.6 },
+  calm: { label: '静けさ', color: '#7c9db0', valence: 0.3, arousal: 0.15 },
+  sadness: { label: '悲しみ', color: '#8b86ae', valence: -0.6, arousal: 0.3 },
+  anxiety: { label: '不安', color: '#9a7fa8', valence: -0.5, arousal: 0.75 },
+  anger: { label: '怒り', color: '#c8442a', valence: -0.6, arousal: 0.85 },
+  fatigue: { label: '疲れ', color: '#8c8478', valence: -0.35, arousal: 0.2 },
 }
 
 const LEXICON: Record<EmotionKey, RegExp> = {
