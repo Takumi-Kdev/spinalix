@@ -39,11 +39,11 @@ describe('デモの筋書き（8ヶ月の記憶から生まれる想起の順番
     expect(t.text).toContain('あれが、たぶん答えだ')
   })
 
-  it('2) 二番目の想起は「矛盾」— 過去の恐れと、10月の「明日、出す。」が同居する', () => {
+  it('2) 二番目の想起は「矛盾」— 5月の諦めと、10月の落ち着きが同居する', () => {
     const first = generateSuddenThought(fragments, links, [], PREFS, new Date('2026-10-15T08:00:00+09:00'))!
     const second = generateSuddenThought(fragments, links, [first], PREFS, new Date('2026-10-15T08:00:00+09:00'))!
     expect(second.kind).toBe('tension')
-    expect(second.text).toContain('明日、出す')
+    expect(second.text).toContain('諦め')
     expect(second.steps.length).toBeGreaterThanOrEqual(2)
   })
 

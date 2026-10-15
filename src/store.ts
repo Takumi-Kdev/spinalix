@@ -380,7 +380,7 @@ export const useSpinalix = create<SpinalixState>((set, get) => {
   }
 })
 
-const THEME_HINTS = ['留学', '家族', '友達', '仕事', '勉強', '健康', 'お金', '将来', '自分', '恋', '写真', '部活', '社会', '夢', '挑戦']
+const THEME_HINTS = ['留学', '家族', '友達', '仕事', '勉強', '健康', 'お金', '将来', '自分', '恋', '写真', '部活', '社会', '夢', '挑戦', '学校', '哲学', '寂しさ', '彼女', '矛盾']
 const PERSON_HINTS = ['母', '父', 'ミナ', '悠斗', 'ユイ', '先生', '店長', '同期', '弟']
 
 function extractTags(text: string): { themes: string[]; people: string[] } {

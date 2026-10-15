@@ -85,6 +85,29 @@ export function thinkWithTrace(
     if (drafts.length >= 4) break
   }
 
+  // 視野狭窄の防止: まだ一度も語っていない記憶の中から、活性の高いものを1本歩く
+  const neverUsed = new Set(fragments.map((f) => f.id))
+  for (const t of prevThoughts) for (const id of t.path ?? []) neverUsed.delete(id)
+  if (neverUsed.size > 0 && neverUsed.size >= Math.min(5, fragments.length * 0.2)) {
+    const fresh = [...neverUsed]
+      .map((id) => fragments.find((f) => f.id === id)!)
+      .filter(Boolean)
+      .sort((a, b) => (activation.get(b.id) ?? 0) - (activation.get(a.id) ?? 0) || b.id.localeCompare(a.id))
+      .slice(0, 6)
+    const seed = fresh[cycle % fresh.length]
+    if (seed) {
+      const walks = findWalks(fragments, links, activation, [{ id: seed.id, weight: 0.82 }], preferred, {
+        excludeFingerprints: usedFingerprints,
+        excludePairs: usedPairs,
+      })
+      if (walks[0]) {
+        const d = renderWalk(walks[0], fragments)
+        drafts.push(d)
+        draftMeta.set(d, { mode: preferred, walkScore: walks[0].score, path: walks[0].path })
+      }
+    }
+  }
+
   const analysis = analyzeMemory(fragments, now)
   const openloop = analysis.openLoops
     .filter((l) => !usedFingerprints.has(`openloop|${l.theme}`))
@@ -103,13 +126,20 @@ export function thinkWithTrace(
       const first = fragments.find((f) => f.id === d.path[0])
       const last = fragments.find((f) => f.id === d.path[d.path.length - 1])
       if (first && last) s += Math.min(0.16, Math.abs(first.emotion.valence - last.emotion.valence) * 0.12)
-      // 「最近の側」が新しいほど、いま効いている矛盾として優先する
-      if (last) {
-        const ageDays = (now.getTime() - new Date(last.createdAt).getTime()) / 86400000
+      // 道筋の中で「いちばん新しい側」が最近であるほど、いま効いている矛盾として優先する
+      const newest = d.path
+        .map((id) => fragments.find((f) => f.id === id))
+        .filter((f): f is NonNullable<typeof f> => Boolean(f))
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
+      if (newest) {
+        const ageDays = (now.getTime() - new Date(newest.createdAt).getTime()) / 86400000
         s += Math.max(0, (90 - ageDays) / 90) * 0.06
       }
     }
     for (const id of d.path) s -= 0.12 * (recentUsage.get(id) ?? 0)
+    // まだ語っていない記憶を含む道には、わずかな探索ボーナス
+    const freshCount = d.path.filter((id) => neverUsed.has(id)).length
+    if (freshCount > 0) s += Math.min(0.12, freshCount * 0.05)
     for (const t of prevThoughts) {
       const overlap = (t.path ?? []).filter((id) => d.path.includes(id)).length
       if (overlap >= 2) s -= 0.15 * overlap

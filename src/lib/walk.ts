@@ -73,7 +73,10 @@ function hopScore(
   const lex = jaccard(bigrams(from.text), bigrams(to.text))
   // 「跳躍」は、言葉が重ならないのに感情が響く接続を好む
   const novelty = mode === 'leap' ? 0.55 + 0.45 * (1 - lex) : 0.75 + 0.25 * (1 - lex)
-  const emotionTerm = 0.75 + 0.5 * (1 - Math.abs(from.emotion.valence - to.emotion.valence) / 2)
+  const dv = Math.abs(from.emotion.valence - to.emotion.valence)
+  // 矛盾（対照）は「振れ幅の大きい方」を優先する。それ以外は「感情の距離が近い方」を優先。
+  const emotionTerm =
+    mode === 'contrast' ? 0.7 + 0.6 * Math.min(1, dv / 1.4) : 0.75 + 0.5 * (1 - dv / 2)
   const revisit = priorNodes.has(to.id) ? 0.35 : 1
   const targetHeat = 0.45 + 0.55 * activationOf(to.id)
   return l.weight * kindBonus * novelty * emotionTerm * revisit * targetHeat
@@ -94,7 +97,8 @@ export interface FindWalkOptions {
 const MODE_MAX_HOPS: Record<WalkMode, number> = {
   dwell: 2,
   resonance: 2,
-  contrast: 2,
+  // 対照（矛盾）は「二つの極」を突き合わせるモード。道のり（3ホップ以上）は軌跡モードの役割。
+  contrast: 1,
   arc: 3,
   leap: 2,
 }
