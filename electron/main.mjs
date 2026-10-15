@@ -32,7 +32,7 @@ async function boot() {
       contextIsolation: true,
     },
   })
-  win.loadURL(`http://127.0.0.1:${serverInfo.port}`)
+  win.loadURL(`http://127.0.0.1:${serverInfo.port}/#/app`)
   win.on('closed', () => {
     win = null
   })
@@ -64,7 +64,7 @@ function showWindow() {
       backgroundColor: '#07090f',
       webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true },
     })
-    win.loadURL(`http://127.0.0.1:${serverInfo.port}`)
+    win.loadURL(`http://127.0.0.1:${serverInfo.port}/#/app`)
     win.on('closed', () => {
       win = null
     })

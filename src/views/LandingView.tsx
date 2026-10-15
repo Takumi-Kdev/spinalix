@@ -145,8 +145,9 @@ export function LandingView() {
           </article>
           <div className="mt-5 border-t border-rule pt-4">
             <p className="text-[11.5px] leading-relaxed text-faint">
-              デモの記憶（実測）: 64の断片 / 265の回路 / 7種の思考 / 17のテスト
+              Next Founders Hackathon 2026 出品。
               <br />
+              デモの記憶（実測）: 64の断片 / 265の回路 / 7種の思考 / 17のテスト。
               8ヶ月分のサンプル記憶から、エンジンが実際に見つけた想起です。
             </p>
           </div>

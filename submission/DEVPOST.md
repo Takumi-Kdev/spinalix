@@ -64,7 +64,7 @@ typescript, react, vite, tailwindcss, d3-force, d3-zoom, zustand, electron, node
 ## リンク
 
 - **Macアプリ（ダウンロード）**: https://github.com/Takumi-Kdev/spinalix/releases/latest
-- ライブデモ: https://takumi-kdev.github.io/spinalix/
+- プロダクトページ（デモは「デモを開く」から）: https://takumi-kdev.github.io/spinalix/
 - GitHub: https://github.com/Takumi-Kdev/spinalix
 - 動画: （YouTube限定公開URLを貼る）
 
