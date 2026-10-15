@@ -69,11 +69,11 @@ export function CaptureSheet({ open, onClose }: { open: boolean; onClose: () => 
                 onChange={(e) => setText(e.target.value)}
                 rows={3}
                 placeholder="今の気持ちを、ひとことで。"
-                className="w-full resize-none bg-transparent font-serif text-[15.5px] leading-[1.95] text-sumi outline-none placeholder:text-[#a49a86]"
+                className="w-full resize-none bg-transparent font-serif text-[15.5px] leading-[1.95] text-sumi outline-none placeholder:text-[#8d8474]"
               />
               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 border-t pt-2 letter-rule">
                 {EXAMPLES.map((ex) => (
-                  <button key={ex} onClick={() => setText(ex)} className="text-left text-[11px] text-[#6f6656] underline-offset-4 transition hover:underline">
+                  <button key={ex} onClick={() => setText(ex)} className="text-left text-[11px] text-[#5f584a] underline-offset-4 transition hover:underline">
                     {ex.slice(0, 16)}…
                   </button>
                 ))}

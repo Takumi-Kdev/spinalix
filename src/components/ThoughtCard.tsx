@@ -59,10 +59,10 @@ export function ThoughtCard({
           </span>
           <div>
             <p className="text-[13px] text-sumi">{meta.label}</p>
-            <p className="tnum text-[10.5px] text-[#6f6656]">{formatJP(thought.createdAt)}</p>
+            <p className="tnum text-[10.5px] text-[#5f584a]">{formatJP(thought.createdAt)}</p>
           </div>
         </div>
-        <p className="text-right text-[10.5px] leading-relaxed text-[#6f6656]">
+        <p className="text-right text-[10.5px] leading-relaxed text-[#5f584a]">
           {thought.engine === 'ai' ? <span className="text-aiiro">AI文体・検証済</span> : 'ローカル思考'}
           <br />
           {dom ? `感情 ${EMOTION_META[dom].label}` : '感情 凪'}
@@ -72,21 +72,21 @@ export function ThoughtCard({
       <p className={`mt-4 font-serif text-sumi ${compact ? 'text-[15.5px]' : 'text-[17px]'} leading-[1.95]`}>{thought.text}</p>
 
       <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]">
-        <span className="text-[#6f6656]">出典</span>
+        <span className="text-[#5f584a]">出典</span>
         {sources.map((s, i) => (
           <button key={s.id} onClick={() => onOpenSource(s.id)} className="group inline-flex items-center gap-1.5 text-sumi/85 underline-offset-4 transition hover:underline">
-            {i > 0 && <span className="text-[#a49a86]">・</span>}
+            {i > 0 && <span className="text-[#8d8474]">・</span>}
             <span className="h-1.5 w-1.5 rounded-full" style={{ background: emotionColor(s) }} />
             {formatJP(s.createdAt)}
           </button>
         ))}
       </div>
 
-      <p className="mt-2 text-[11.5px] text-[#6f6656]">{meta.hint}</p>
+      <p className="mt-2 text-[11.5px] text-[#5f584a]">{meta.hint}</p>
 
       {thought.steps.length > 0 && (
         <div className="mt-5 border-t pt-4 letter-rule">
-          <button onClick={() => setShowTrace((v) => !v)} className="text-[11.5px] text-[#6f6656] transition hover:text-sumi">
+          <button onClick={() => setShowTrace((v) => !v)} className="text-[11.5px] text-[#5f584a] transition hover:text-sumi">
             思考の足跡 {showTrace ? 'を閉じる' : 'をひらく'}
           </button>
           {showTrace && (
@@ -94,7 +94,7 @@ export function ThoughtCard({
               <ol className="space-y-1.5">
                 {thought.steps.map((s, i) => (
                   <li key={i} className="flex gap-3 text-[12px] leading-relaxed text-[#4c4538]">
-                    <span className="tnum w-10 shrink-0 text-[#a49a86]">{s.label}</span>
+                    <span className="tnum w-10 shrink-0 text-[#8d8474]">{s.label}</span>
                     {s.detail}
                   </li>
                 ))}
@@ -102,28 +102,28 @@ export function ThoughtCard({
 
               {thought.trace && (
                 <div className="border-t pt-3 letter-rule">
-                  <p className="text-[11px] text-[#6f6656]">解剖 — なぜ、これが選ばれたか</p>
+                  <p className="text-[11px] text-[#5f584a]">解剖 — なぜ、これが選ばれたか</p>
                   <div className="mt-2 grid gap-3 sm:grid-cols-2">
                     <div>
-                      <p className="text-[10.5px] text-[#a49a86]">起点（今のあなた）</p>
+                      <p className="text-[10.5px] text-[#8d8474]">起点（今のあなた）</p>
                       <ul className="mt-1 space-y-1">
                         {thought.trace.seeds.map((s) => (
                           <li key={s.id} className="flex items-baseline gap-2 text-[11.5px] text-[#4c4538]">
-                            <span className="tnum text-[#a49a86]">{s.date}</span>
+                            <span className="tnum text-[#8d8474]">{s.date}</span>
                             <span>{s.reason}</span>
-                            <span className="tnum ml-auto text-[#6f6656]">A={s.activation.toFixed(2)}</span>
+                            <span className="tnum ml-auto text-[#5f584a]">A={s.activation.toFixed(2)}</span>
                           </li>
                         ))}
                       </ul>
                     </div>
                     <div>
-                      <p className="text-[10.5px] text-[#a49a86]">検討した道筋（上位）</p>
+                      <p className="text-[10.5px] text-[#8d8474]">検討した道筋（上位）</p>
                       <ul className="mt-1 space-y-1">
                         {thought.trace.walks.slice(0, 6).map((w, i) => (
                           <li key={i} className="flex items-baseline gap-2 text-[11.5px] text-[#4c4538]">
-                            <span className="tnum text-[#6f6656]">{w.score.toFixed(2)}</span>
+                            <span className="tnum text-[#5f584a]">{w.score.toFixed(2)}</span>
                             <span>{MODE_LABEL[w.mode] ?? w.mode}</span>
-                            <span className="ml-auto text-[#6f6656]">
+                            <span className="ml-auto text-[#5f584a]">
                               {w.chosen ? '採用' : ''}
                             </span>
                           </li>
@@ -131,7 +131,7 @@ export function ThoughtCard({
                       </ul>
                     </div>
                   </div>
-                  <p className="mt-2 text-[11px] text-[#6f6656]">{thought.trace.note}</p>
+                  <p className="mt-2 text-[11px] text-[#5f584a]">{thought.trace.note}</p>
                 </div>
               )}
             </div>
@@ -147,7 +147,7 @@ export function ThoughtCard({
           >
             これは私だ
           </button>
-          <button onClick={() => decide(false)} className="text-[13px] text-[#6f6656] underline-offset-4 transition hover:text-sumi hover:underline">
+          <button onClick={() => decide(false)} className="text-[13px] text-[#5f584a] underline-offset-4 transition hover:text-sumi hover:underline">
             ちがう
           </button>
         </div>

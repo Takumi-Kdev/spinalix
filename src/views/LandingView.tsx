@@ -123,16 +123,16 @@ export function LandingView() {
                 <span className="seal text-[15px]">引</span>
                 <div>
                   <p className="text-[13px] text-sumi">自己引用</p>
-                  <p className="tnum text-[10.5px] text-[#6f6656]">10月15日</p>
+                  <p className="tnum text-[10.5px] text-[#5f584a]">10月15日</p>
                 </div>
               </div>
-              <p className="text-[10.5px] text-[#6f6656]">ローカル思考</p>
+              <p className="text-[10.5px] text-[#5f584a]">ローカル思考</p>
             </header>
             <p className="mt-4 font-serif text-[16px] leading-[1.95] text-sumi">
               「心臓がうるさい」——3月10日のこの一行を、179日後の9月5日、あなたは自分で引用している。「あれが、たぶん答えだ」
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-x-3 text-[12px] text-sumi/85">
-              <span className="text-[#6f6656]">出典</span>
+              <span className="text-[#5f584a]">出典</span>
               <span className="flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full" style={{ background: EMOTION_META.anticipation.color }} />
                 3月10日
@@ -325,6 +325,51 @@ export function LandingView() {
                 思考 — 自立思考モードの記録。すべての想起に言語化・検証までの足跡が残る。
               </figcaption>
             </figure>
+          </div>
+        </div>
+      </section>
+
+      {/* テスト */}
+      <section className="border-t border-rule">
+        <div className="mx-auto grid max-w-[1080px] gap-8 px-6 py-14 lg:grid-cols-[240px_1fr]">
+          <div>
+            <h2 className="font-serif text-[24px] text-bone">テスト</h2>
+            <p className="mt-2 text-[11.5px] leading-relaxed text-faint">17のテストが、エンジンの約束を守ります。</p>
+          </div>
+          <ul className="max-w-[620px] space-y-2 text-[12.5px] leading-relaxed text-muted">
+            <li>仕込んだ自己引用（「心臓がうるさい」）が、実際に検出されること</li>
+            <li>仕込んだ矛盾（5月の諦めと10月の決断）が、実際に検出されること</li>
+            <li>1件目の想起が自己引用、2件目が矛盾になること（デモの筋書き）</li>
+            <li>想起の出典が、すべて実在の断片であること</li>
+            <li>同じ入力からは、同じ想起が出ること（決定論性）</li>
+            <li>使った記憶の組み合わせを、二度使わないこと</li>
+            <li>採用した想起が、機械の断片として回路に定着すること</li>
+            <li>思考結晶が、根拠つきの洞察と矛盾を返すこと</li>
+          </ul>
+        </div>
+      </section>
+
+      {/* 設計判断の記録 */}
+      <section className="border-t border-rule">
+        <div className="mx-auto grid max-w-[1080px] gap-8 px-6 py-14 lg:grid-cols-[240px_1fr]">
+          <h2 className="font-serif text-[24px] text-bone">設計判断</h2>
+          <div className="max-w-[620px] space-y-4 text-[13.5px] leading-[2] text-muted">
+            <p>
+              <span className="text-bone">リンクは、少数精鋭に。</span>{' '}
+              最初の実装は回路が多すぎて、矛盾がノイズになった。ノードごと・種類ごとに上限を設け、上位だけを残すようにした。
+            </p>
+            <p>
+              <span className="text-bone">AIには、考えさせない。</span>{' '}
+              LLMに想起を作らせると、平均的な答えに寄っていく。思考はエンジンが決定論的に組み、AIには文体だけを許して、門番が検証する形にした。
+            </p>
+            <p>
+              <span className="text-bone">足すより、削る。</span>{' '}
+              発光するノード、紫のグラデーション、等間隔のカード。いわゆる「AIらしい見た目」を全部削って、墨と紙と朱だけにした。
+            </p>
+            <p>
+              <span className="text-bone">説明できない想起は、出さない。</span>{' '}
+              起点の活性値、検討した道筋、選ばなかった候補。すべてを解剖として開示することを、機能の一部にした。
+            </p>
           </div>
         </div>
       </section>

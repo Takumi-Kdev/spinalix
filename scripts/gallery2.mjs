@@ -1,5 +1,5 @@
 import { chromium } from 'playwright'
-import { mkdir, copyFile } from 'node:fs/promises'
+import { mkdir } from 'node:fs/promises'
 const OUT = 'submission/gallery'
 await mkdir(OUT, { recursive: true })
 const browser = await chromium.launch()
@@ -42,8 +42,4 @@ await page.screenshot({ path: `${OUT}/08-settings.png` })
 
 await browser.close()
 
-// ランディング用の3枚を public/gallery へ
-await copyFile(`${OUT}/05-flow.png`, 'public/gallery/03-flow.png')
-await copyFile(`${OUT}/04-circuit.png`, 'public/gallery/02-circuit.png')
-await copyFile(`${OUT}/06-stream.png`, 'public/gallery/04-stream.png')
-console.log('done')
+console.log('done (embeds untouched)')

@@ -41,11 +41,11 @@ export function PurposeView({ onOpenFragment }: { onOpenFragment: (id: string) =
             onChange={(e) => setIntention(e.target.value)}
             rows={2}
             placeholder="例: 留学に行くべきか、迷っている"
-            className="w-full resize-none bg-transparent font-serif text-[15.5px] leading-[1.95] text-sumi outline-none placeholder:text-[#a49a86]"
+            className="w-full resize-none bg-transparent font-serif text-[15.5px] leading-[1.95] text-sumi outline-none placeholder:text-[#8d8474]"
           />
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 border-t pt-2 letter-rule">
             {EXAMPLES.map((ex) => (
-              <button key={ex} onClick={() => setIntention(ex)} className="text-[11px] text-[#6f6656] underline-offset-4 transition hover:underline">
+              <button key={ex} onClick={() => setIntention(ex)} className="text-[11px] text-[#5f584a] underline-offset-4 transition hover:underline">
                 {ex}
               </button>
             ))}
@@ -121,8 +121,8 @@ export function CrystalView({ crystal, onOpenFragment }: { crystal: ThoughtCryst
           {crystal.recalled.map((r) => (
             <button key={r.fragmentId} onClick={() => onOpenFragment(r.fragmentId)} className="letter block w-full px-4 py-3 text-left transition hover:translate-y-[-1px]">
               <div className="flex items-baseline justify-between">
-                <span className="tnum text-[10.5px] text-[#6f6656]">{r.when}</span>
-                <span className="text-[10.5px] text-[#6f6656]">{r.why}</span>
+                <span className="tnum text-[10.5px] text-[#5f584a]">{r.when}</span>
+                <span className="text-[10.5px] text-[#5f584a]">{r.why}</span>
               </div>
               <p className="mt-1.5 font-serif text-[13.5px] leading-relaxed text-sumi">{r.quote}</p>
             </button>
